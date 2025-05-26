@@ -18,6 +18,7 @@ import {
 } from "./utils/booking-storage"
 import axios from "axios"
 
+
 const SelectServicePage = () => {
   const navigate = useNavigate()
   const { eventName } = useParams()
@@ -100,7 +101,7 @@ const SelectServicePage = () => {
 
     fetchSubcontractorServices()
   }, [])
-
+  
   // Helper function to get appropriate icon based on service name
   const getServiceIcon = (serviceName) => {
     const name = serviceName.toLowerCase()

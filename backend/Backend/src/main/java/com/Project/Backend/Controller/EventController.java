@@ -34,7 +34,7 @@ public class EventController {
 
     @GetMapping("/{id}")
     public ResponseEntity<EventEntity> readById(@PathVariable int id) {
-        return ResponseEntity.ok(eventService.readById(id));
+        return ResponseEntity.ok(eventService.findById(id));
     }
 
     @GetMapping("/event-details/{event_name}")

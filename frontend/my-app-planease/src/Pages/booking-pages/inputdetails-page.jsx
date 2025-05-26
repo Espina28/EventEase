@@ -9,11 +9,16 @@ import Footer from "../../Components/Footer"
 import DatePickerWithRestriction from "../../Components/DatePickerWithRestriction"
 import { getPersonalInfo, getEventDetails, savePersonalInfo, saveEventDetails } from "./utils/booking-storage"
 import axios from "axios"
+import { clearBookingData, clearSelectedServices } from "./utils/booking-storage"
+
+
+
+
 
 const InputDetailsPage = () => {
   const navigate = useNavigate()
   const { eventName } = useParams()
-
+  
   // Get event name from params or sessionStorage as fallback
   const currentEventName = eventName || sessionStorage.getItem("currentEventName") || "Event"
 
@@ -74,6 +79,23 @@ const InputDetailsPage = () => {
 
     fetchAndAutoFillUserData()
   }, [])
+
+  useEffect(() => {
+  // Reset only the specified event detail fields on mount
+  setEventDetails((prev) => ({
+    ...prev,
+    location: "",
+    eventDate: "",
+    note: "",
+  }));
+  }, []);
+
+  useEffect(() => {
+    clearSelectedServices()
+    clearBookingData()
+  }, [eventName])
+    
+
 
   // Handle personal info changes
   const handlePersonalInfoChange = (e) => {
@@ -165,7 +187,10 @@ const InputDetailsPage = () => {
         {/* Breadcrumb Navigation */}
         <div className="breadcrumb">
           <Link to="/events-dashboard"
-          onClick={}
+          onClick={() => {
+            clearBookingData();
+            clearSelectedServices();
+          }}
           >Home</Link> /
           <Link to={`/event/${encodeURIComponent(currentEventName)}`}>{currentEventName}</Link> / <span>Book Now</span>
         </div>

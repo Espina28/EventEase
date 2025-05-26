@@ -102,6 +102,18 @@ export const clearBookingData = () => {
     sessionStorage.removeItem(key)
   })
 }
+// utils/booking-storage.js (add this if missing)
+
+export const clearSelectedServices = () => {
+  const servicesData = getServicesData();
+  const resetServicesData = {
+    ...servicesData,
+    selectedServices: {},
+    selectedPackage: null,
+    activeTab: "custom",
+  };
+  sessionStorage.setItem(STORAGE_KEYS.SERVICES_DATA, JSON.stringify(resetServicesData));
+};
 
 // Package definitions
 export const PACKAGES = [
