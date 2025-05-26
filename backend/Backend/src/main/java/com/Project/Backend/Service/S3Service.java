@@ -100,14 +100,30 @@ public class S3Service {
 
     // Get Content Type Based on File Extension
     private static String getContentType(String fileName) {
-        if (fileName.endsWith(".png")) {
+        String lower = fileName.toLowerCase();
+
+        if (lower.endsWith(".png")) {
             return "image/png";
-        } else if (fileName.endsWith(".jpg") || fileName.endsWith(".jpeg")) {
+        } else if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) {
             return "image/jpeg";
-        } else if (fileName.endsWith(".gif")) {
+        } else if (lower.endsWith(".gif")) {
             return "image/gif";
+        } else if (lower.endsWith(".mp4")) {
+            return "video/mp4";
+        } else if (lower.endsWith(".mov")) {
+            return "video/quicktime";
+        } else if (lower.endsWith(".webm")) {
+            return "video/webm";
+        } else if (lower.endsWith(".avi")) {
+            return "video/x-msvideo";
+        } else if (lower.endsWith(".mkv")) {
+            return "video/x-matroska";
+        } else if (lower.endsWith(".mp3")) {
+            return "audio/mpeg";
+        } else if (lower.endsWith(".wav")) {
+            return "audio/wav";
         } else {
-            return "application/octet-stream"; // Default if unknown
+            return "application/octet-stream"; // default fallback
         }
     }
 

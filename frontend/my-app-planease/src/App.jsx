@@ -1,7 +1,7 @@
 import LoginPage from './Pages/login-page'
 import RegisterPage from './Pages/register-page'
 import HomePage from './Pages/home-page'
-import LandingPage from './Pages/landing-page'
+import LandingPage from './Pages/landing-page/landing-page'
 import Navbar from './Components/Navbar'
 import Footer from './Components/Footer'
 import AuthProvider from './Components/AuthProvider'
@@ -11,16 +11,21 @@ import SubcontractorBookings from './Pages/subcontractor-pages/subcontractor-boo
 import SubcontractorDashboard from './Pages/subcontractor-pages/subcontractor-dashboard'
 import SubcontractorLogin from './Pages/subcontractor-pages/subcontractor-login'
 import SubcontractorCalendar from './Pages/subcontractor-pages/subcontractor-calendar'
-import AdminSubContractors from './Pages/admin-pages/admin-subcontractors'
+import YourEvents from './Pages/admin-pages/admin-your-events.jsx'
 import AdminProtectedRoute from './Components/AdminProtectedRoute'
 import SubContractorProtectedRoute from './Components/SubContractorProtectedRoute'
-import InputDetailsPage from './Pages/inputdetails-page'
-import SelectServicePage from './Pages/selectservice-page'
-import PreviewBookingPage from './Pages/previewbooking-page'
-import PaymentProofPage from './Pages/paymentproof-page'
-import EventPage from './Pages/event-dashboard'
-import EventDetails from './Pages/event-details';
-import WeddingPackagePage from './Pages/weddingpackage-details';
+import InputDetailsPage from './Pages/booking-pages/inputdetails-page.jsx'
+import SelectServicePage from './Pages/booking-pages/selectservice-page.jsx'
+import PreviewBookingPage from './Pages/booking-pages/previewbooking-page.jsx'
+import PaymentProofPage from './Pages/booking-pages/paymentproof-page.jsx'
+import EventPage from './Pages/events-dashboard/events-dashboard.jsx'
+import EventDetails from './Pages/events-dashboard/event-details.jsx'
+import NotificationsPage from './Pages/NotificationsPage.jsx'
+import PackageDetails from './Pages/events-dashboard/package-details.jsx'
+import AdminPendingRequest from './Pages/admin-pages/admin-pendingrequest.jsx'
+import AdminBookings from "./Pages/admin-pages/admin-bookings.jsx";
+import AdminSubContractors from './Pages/admin-pages/admin-subcontractors.jsx'
+import UserReservations from './Pages/reservations-pages/user-reservations.jsx'
 
 
 function App() {
@@ -38,46 +43,98 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
 
           <Route path="/register" element={<RegisterPage />} />
-          <Route path="/book/inputdetails" element={<InputDetailsPage />} />
-          <Route path="/book/services" element={<SelectServicePage />} />
-          <Route path="/book/preview" element={<PreviewBookingPage />} />
-          <Route path="/book/payment" element={<PaymentProofPage />} />
+          <Route path="/book/:eventName/inputdetails" element={<InputDetailsPage />} />
+          <Route path="/book/:eventName/services" element={<SelectServicePage />} />
+          <Route path="/book/:eventName/preview" element={<PreviewBookingPage />} />
+          <Route path="/book/:eventName/payment" element={<PaymentProofPage />} />
+
+          <Route path="/notifications" element={
+            <ProtectedRoute>
+              <NotificationsPage />
+            </ProtectedRoute>
+            } />
+
+           <Route path="/user-reservations" element={
+            <ProtectedRoute>
+              <UserReservations />
+            </ProtectedRoute>
+            } />
+
+          <Route path="/events-dashboard" element={
+            <>
+              <ProtectedRoute>
+                <Navbar />
+                <EventPage />
+                <Footer />
+              </ProtectedRoute>
+            </>
+          }
+          />
+
+            <Route path="/package/:package_name" element={
+                <>
+                    <ProtectedRoute>
+                        <Navbar />
+                        <PackageDetails />
+                        <Footer />
+                    </ProtectedRoute>
+                </>
+            }
+            />
+
+            <Route path="/event/:event_name" element={
+                <>
+                    <ProtectedRoute>
+                        <Navbar />
+                        <EventDetails />
+                        <Footer />
+                    </ProtectedRoute>
+                </>
+            }
+            />
           <Route path="/subcontractor/dashboard" element={
-            // <SubContractorProtectedRoute>
+             <SubContractorProtectedRoute>
                 <SubcontractorDashboard />  
-            // </SubContractorProtectedRoute>
+             </SubContractorProtectedRoute>
             } />
           <Route path="/subcontractor/transactions" element={
-            // <SubContractorProtectedRoute>
+            <SubContractorProtectedRoute>
                 <SubcontractorBookings />
-            // </SubContractorProtectedRoute>
+             </SubContractorProtectedRoute>
             } />
           <Route path="/subcontractor/calendar" element={
-            // <SubContractorProtectedRoute>
+            <SubContractorProtectedRoute>
                 <SubcontractorCalendar />
-            // </SubContractorProtectedRoute>
+            </SubContractorProtectedRoute>
             } />
-          <Route path="/subcontractor/login" element={<SubcontractorLogin />
-        } />
+          <Route path="/subcontractor/login" element={<SubcontractorLogin />} />
 
-          <Route path="/admin/subcontractors" element={
-            <AdminProtectedRoute>
+
+          <Route path="/admin/pendings" element={
+             <AdminProtectedRoute>
+                <AdminPendingRequest/>
+             </AdminProtectedRoute>
+            }/>
+
+            <Route path="/admin/bookings" element={
+                 <AdminProtectedRoute>
+                <AdminBookings/>
+                 </AdminProtectedRoute>
+            }/>
+
+            <Route path="/admin/events" element={
+                 <AdminProtectedRoute>
+                <YourEvents/>
+                 </AdminProtectedRoute>
+            }/>
+            <Route path="/admin/subcontractors" element={
+                 <AdminProtectedRoute>
                 <AdminSubContractors/>
-            </AdminProtectedRoute>
+                 </AdminProtectedRoute>
             }/>
 
           
           <Route path="/home" element={
-              <>
-                <ProtectedRoute>
-                  <Navbar />
-                    <HomePage />
-                  <Footer />
-                </ProtectedRoute>
-              </>
-            }
-          />
-          <Route path="/event" element={
               <>
                 <ProtectedRoute>
                   <Navbar />
@@ -87,29 +144,6 @@ function App() {
               </>
             }
           />
-
-          <Route path="/package" element={
-              <>
-              {/* <PackageProtectedRoute> */}
-                <Navbar />
-                  <WeddingPackagePage />
-                <Footer />
-              {/* </PackageProtectedRoute>  */}
-              </>
-            }
-          />
-
-          <Route path="/event/:id" element={
-              <>
-              <ProtectedRoute>
-                <Navbar />
-                  <EventDetails />
-                <Footer />
-              </ProtectedRoute>
-              </>
-            } 
-          />
-
         </Routes>
     </BrowserRouter>
   </AuthProvider>

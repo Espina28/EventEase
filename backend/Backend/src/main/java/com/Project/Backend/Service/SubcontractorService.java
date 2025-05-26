@@ -1,10 +1,11 @@
 package com.Project.Backend.Service;
 
+import java.sql.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 
-import com.Project.Backend.DTO.CreateSubcontractorRequest;
-import com.Project.Backend.Entity.ServiceOfferedEntity;
+import com.Project.Backend.DTO.GetSubcontractor;
 import com.Project.Backend.Repository.SubContractorRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -17,28 +18,35 @@ public class SubcontractorService {
     @Autowired
     private SubContractorRepository subContractorRepository;
     @Autowired
-    private ServiceOfferedService serviceOfferedService;
-    @Autowired
     private S3Service s3Service;
 
-//    public SubcontractorEntity saveSubcontractor(CreateSubcontractorRequest createSubcontractorRequest) {
-//        SubcontractorEntity subcontractorEntity = new SubcontractorEntity();
-//        ServiceOfferedEntity serviceOfferedEntity = null;
-//        try{
-//            serviceOfferedEntity = serviceOfferedService.findByServiceByName(createSubcontractorRequest.getService());
-//            if(serviceOfferedEntity == null){
-//                return null;
-//            }
-//            subcontractorEntity.setServiceName(serviceOfferedEntity);
-//            subcontractorEntity.setUser(createSubcontractorRequest.getUser());
-//        } catch (RuntimeException e) {
-//            throw new RuntimeException(e);
-//        }
-//
-//    }
+    public SubcontractorEntity saveSubcontractor(SubcontractorEntity subcontractor) {
+        return subContractorRepository.save(subcontractor);
+    }
 
     public List<SubcontractorEntity> getAllSubcontractors() {
         return subContractorRepository.findAll();
+    }
+
+    public List<GetSubcontractor> getAvailableSubcontractors(Date date) {
+        List<SubcontractorEntity> subcontractors = subContractorRepository.findAvailableSubcontractors(date);
+        return subcontractors.stream()
+                .filter(subcontractor -> subcontractor.getUser() != null)
+                .map(subcontractor -> new GetSubcontractor(
+                        subcontractor.getSubcontractor_Id(),
+                        subcontractor.getUser().getFirstname() + " " + subcontractor.getUser().getLastname(),
+                        subcontractor.getUser().getEmail(),
+                        subcontractor.getUser().getPhoneNumber(),
+                        null,
+                        subcontractor.getSubcontractor_service_price(),
+                        subcontractor.getSubcontractor_serviceName(),
+                        subcontractor.getSubcontractor_description(),
+                        subcontractor.getSubcontractor_serviceCategory(),
+                        subcontractor.getUnavailableDates(),
+                        subcontractor.getShowcase()
+                ))
+                .toList();
+
     }
 
     public SubcontractorEntity getSubcontractorById(int id) {
@@ -57,7 +65,7 @@ public class SubcontractorService {
     public String editDescription(String email, String description) throws SdkClientException {
        try {
            SubcontractorEntity subcontractor = getSubcontractorByEmail(email);
-           subcontractor.setDescription(description);
+           subcontractor.setSubcontractor_description(description);
            subContractorRepository.save(subcontractor);
        }catch (Exception e) {
            return "Error";

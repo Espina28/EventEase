@@ -1,18 +1,29 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, {useEffect} from 'react';
+import { Link, useParams } from 'react-router-dom';
 import './styles/booking-sidepanel.css';
+import {getEventDetails} from "../Pages/booking-pages/utils/booking-storage.js"
 
 const BookingSidePanel = ({ activeStep }) => {
+  const currentEventName = sessionStorage.getItem("currentEventName") || "Event"
+
+  const eventDate = getEventDetails.eventDate;
+
+  useEffect(() => {
+    console.log("event date: ", getEventDetails.eventDate);
+    console.log("current event name: ", currentEventName);
+  }, []);
+
+
   // Define the booking steps
   const bookingSteps = [
-    { id: 'enter-details', label: 'Enter Details', path: '/book/inputdetails' },
-    { id: 'services', label: 'Services', path: '/book/services' },
-    { id: 'preview', label: 'Preview', path: '/book/preview' }
+    { id: 'enter-details', label: 'Enter Details', path: `/book/${currentEventName}/inputdetails` },
+    { id: 'services', label: 'Services', path: `/book/${currentEventName}/services` },
+    { id: 'preview', label: 'Preview', path: `/book/${currentEventName}/preview` }
   ];
 
   // Define payment steps
   const paymentSteps = [
-    { id: 'upload-payment', label: 'Upload Payment Proof', path: '/book/payment' }
+    { id: 'upload-payment', label: 'Upload Payment Proof', path: `/book/${currentEventName}/payment` }
   ];
 
   return (
@@ -20,14 +31,18 @@ const BookingSidePanel = ({ activeStep }) => {
       <div className="manage-booking-section">
         <h3>Manage Booking</h3>
         <ul>
-          {bookingSteps.map(step => (
-            <li 
-              key={step.id} 
-              className={activeStep === step.id ? 'active' : ''}
-            >
-              <Link to={step.path}>{step.label}</Link>
-            </li>
-          ))}
+          {bookingSteps
+              .filter(step => !(currentEventName.toLowerCase().includes('package') && step.id === 'services'))
+              .map(step => (
+                  <li
+                      key={step.id}
+                      className={activeStep === step.id ? 'active' : ''}
+                  >
+                    <Link to={step.path}>
+                      {step.label}
+                    </Link>
+                  </li>
+              ))}
         </ul>
       </div>
       
@@ -35,8 +50,8 @@ const BookingSidePanel = ({ activeStep }) => {
         <h3>Payment Method</h3>
         <ul>
           {paymentSteps.map(step => (
-            <li 
-              key={step.id} 
+            <li
+              key={step.id}
               className={activeStep === step.id ? 'active' : ''}
             >
               <Link to={step.path}>{step.label}</Link>

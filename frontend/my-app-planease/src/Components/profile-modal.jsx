@@ -8,6 +8,15 @@ import { PROFILE_UPDATED_EVENT } from "./Navbar"
 
 const API_BASE_URL = "http://localhost:8080"
 
+// Create separate axios instance for PSGC API (without auth headers)
+const psgcApi = axios.create({
+  baseURL: "https://psgc.gitlab.io/api",
+  timeout: 10000,
+  headers: {
+    "Content-Type": "application/json",
+  },
+})
+
 export function ProfileModal({ open, onOpenChange }) {
   const modalRef = useRef(null)
   const [editMode, setEditMode] = useState(false)
@@ -106,10 +115,10 @@ export function ProfileModal({ open, onOpenChange }) {
     }
   }, [])
 
-  // Fetch Regions on mount
+  // Fetch Regions on mount using separate PSGC axios instance
   useEffect(() => {
-    axios
-      .get("https://psgc.gitlab.io/api/regions/")
+    psgcApi
+      .get("/regions/")
       .then((res) => setRegions(res.data))
       .catch((err) => console.error("Error fetching regions:", err))
   }, [])
@@ -119,6 +128,7 @@ export function ProfileModal({ open, onOpenChange }) {
       try {
         const token = localStorage.getItem("token")
 
+        // Use regular axios for backend API calls (with auth headers)
         const { data: userData } = await axios.get(`${API_BASE_URL}/user/getuser`, {
           headers: { Authorization: `Bearer ${token}` },
         })
@@ -173,9 +183,9 @@ export function ProfileModal({ open, onOpenChange }) {
         if (regionData) {
           setSelectedRegion(regionData.code)
 
-          // Fetch provinces for this region
+          // Fetch provinces for this region using PSGC API
           try {
-            const { data } = await axios.get(`https://psgc.gitlab.io/api/regions/${regionData.code}/provinces/`)
+            const { data } = await psgcApi.get(`/regions/${regionData.code}/provinces/`)
             setProvinces(data)
 
             // Find province by name
@@ -184,10 +194,10 @@ export function ProfileModal({ open, onOpenChange }) {
               if (provinceData) {
                 setSelectedProvince(provinceData.code)
 
-                // Fetch cities for this province
+                // Fetch cities for this province using PSGC API
                 try {
-                  const { data: citiesData } = await axios.get(
-                    `https://psgc.gitlab.io/api/provinces/${provinceData.code}/cities-municipalities/`,
+                  const { data: citiesData } = await psgcApi.get(
+                    `/provinces/${provinceData.code}/cities-municipalities/`,
                   )
                   setCitiesMunicipalities(citiesData)
 
@@ -197,10 +207,10 @@ export function ProfileModal({ open, onOpenChange }) {
                     if (cityData) {
                       setSelectedCityMunicipality(cityData.code)
 
-                      // Fetch barangays for this city
+                      // Fetch barangays for this city using PSGC API
                       try {
-                        const { data: barangaysData } = await axios.get(
-                          `https://psgc.gitlab.io/api/cities-municipalities/${cityData.code}/barangays/`,
+                        const { data: barangaysData } = await psgcApi.get(
+                          `/cities-municipalities/${cityData.code}/barangays/`,
                         )
                         setBarangays(barangaysData)
 
@@ -272,7 +282,7 @@ export function ProfileModal({ open, onOpenChange }) {
     return parts.length > 0 ? parts.join(", ") : "No address provided"
   }
 
-  // Handle region change
+  // Handle region change using PSGC API
   const handleRegionChange = async (e) => {
     const regionCode = e.target.value
     const regionName = e.target.options[e.target.selectedIndex].text
@@ -293,7 +303,7 @@ export function ProfileModal({ open, onOpenChange }) {
 
     if (regionCode) {
       try {
-        const { data } = await axios.get(`https://psgc.gitlab.io/api/regions/${regionCode}/provinces/`)
+        const { data } = await psgcApi.get(`/regions/${regionCode}/provinces/`)
         setProvinces(data)
       } catch (err) {
         console.error("Error fetching provinces:", err)
@@ -301,7 +311,7 @@ export function ProfileModal({ open, onOpenChange }) {
     }
   }
 
-  // Handle province change
+  // Handle province change using PSGC API
   const handleProvinceChange = async (e) => {
     const provinceCode = e.target.value
     const provinceName = e.target.options[e.target.selectedIndex].text
@@ -319,7 +329,7 @@ export function ProfileModal({ open, onOpenChange }) {
 
     if (provinceCode) {
       try {
-        const { data } = await axios.get(`https://psgc.gitlab.io/api/provinces/${provinceCode}/cities-municipalities/`)
+        const { data } = await psgcApi.get(`/provinces/${provinceCode}/cities-municipalities/`)
         setCitiesMunicipalities(data)
       } catch (err) {
         console.error("Error fetching cities:", err)
@@ -327,7 +337,7 @@ export function ProfileModal({ open, onOpenChange }) {
     }
   }
 
-  // Handle city/municipality change
+  // Handle city/municipality change using PSGC API
   const handleCityMunicipalityChange = async (e) => {
     const cityCode = e.target.value
     const cityName = e.target.options[e.target.selectedIndex].text
@@ -342,7 +352,7 @@ export function ProfileModal({ open, onOpenChange }) {
 
     if (cityCode) {
       try {
-        const { data } = await axios.get(`https://psgc.gitlab.io/api/cities-municipalities/${cityCode}/barangays/`)
+        const { data } = await psgcApi.get(`/cities-municipalities/${cityCode}/barangays/`)
         setBarangays(data)
       } catch (err) {
         console.error("Error fetching barangays:", err)
@@ -389,7 +399,7 @@ export function ProfileModal({ open, onOpenChange }) {
       // Get user ID from email
       const userId = user.email
 
-      // Call the upload endpoint
+      // Call the upload endpoint - use regular axios for backend API
       const response = await axios.post(`${API_BASE_URL}/user/upload/profile/${userId}`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -451,7 +461,7 @@ export function ProfileModal({ open, onOpenChange }) {
         barangay: user.barangay,
       }
 
-      // Call the update endpoint
+      // Call the update endpoint - use regular axios for backend API
       const response = await axios.put(`${API_BASE_URL}/user/update`, updatedUser, {
         headers: { Authorization: `Bearer ${token}` },
       })
@@ -576,6 +586,7 @@ export function ProfileModal({ open, onOpenChange }) {
         return
       }
 
+      // Use regular axios for backend API calls
       const response = await axios.post(
         `${API_BASE_URL}/user/check-password`,
         { password: currentPassword },
@@ -620,6 +631,7 @@ export function ProfileModal({ open, onOpenChange }) {
         return
       }
 
+      // Use regular axios for backend API calls
       const response = await axios.put(
         `${API_BASE_URL}/user/update-password`,
         { newPassword },

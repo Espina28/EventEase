@@ -1,45 +1,37 @@
 package com.Project.Backend.Controller;
 
-import java.util.List;
-
+import com.Project.Backend.DTO.ServicePackageDTO;
+import com.Project.Backend.Entity.PackagesEntity;
+import com.Project.Backend.Service.PackagesService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
-import com.Project.Backend.Entity.PackageEntity;
-import com.Project.Backend.Service.PackageService;
-
+import java.util.List;
+import java.util.Map;
 
 @RestController
-@RequestMapping("/packages")
+@RequestMapping("/package")
 public class PackageController {
 
-
     @Autowired
-    private PackageService packageService;
+    private PackagesService packagesService;
 
-    @PostMapping
-    public PackageEntity createPackage(@RequestBody PackageEntity packageEntity) {
-        return packageService.savePackage(packageEntity);
+    @GetMapping("/getServices/{packageName}")
+    public ResponseEntity<?> getPackage(@PathVariable("packageName") String packageName) {
+        List<ServicePackageDTO> services = packagesService.getAllServiceByPackageName(packageName);
+        if(services.isEmpty()){
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(services);
     }
 
-    @GetMapping
-    public List<PackageEntity> getAllPackages() {
-        return packageService.getAllPackages();
-    }
-
-    @GetMapping("/{id}")
-    public PackageEntity getPackageById(@PathVariable Long id) {
-        return packageService.getPackageById(id);
-    }
-
-    @DeleteMapping("/{id}")
-    public void deletePackage(@PathVariable Long id) {
-        packageService.deletePackage(id);
+    @GetMapping("/getAll")
+    public ResponseEntity<?> getAllPackage(){
+        List<ServicePackageDTO> packages = packagesService.getAllPackages();
+        if(packages.isEmpty()){
+            return ResponseEntity.status(404).body(Map.of("error", "No Packages Found"));
+        }
+        return ResponseEntity.ok(packages);
     }
 }

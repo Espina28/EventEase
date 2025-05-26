@@ -15,18 +15,18 @@ const AdminSideBar = () => {
           }
         >
           <LayoutDashboard size={20} />
-          Subcontractors
+          Dashboard
         </NavLink>
 
         <NavLink
-          to="/subcontractor/transactions"
+          to="/admin/subcontractors"
           className={({ isActive }) =>
             `flex items-center gap-3 px-3 py-2 rounded-md transition 
             ${isActive ? "text-blue-600 font-semibold" : "text-gray-600 hover:text-blue-500"}`
           }
         >
           <CreditCard size={20} />
-          Dashboard
+          Subcontractors
         </NavLink>
       </nav>
     </div>

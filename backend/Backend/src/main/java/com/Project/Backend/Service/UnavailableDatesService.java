@@ -44,7 +44,7 @@ public class UnavailableDatesService {
         }
         
         UnavailableDates unavailableDate = new UnavailableDates();
-        unavailableDate.setSubcontractorEntity(subcontractor);
+        unavailableDate.setSubcontractor(subcontractor);
         unavailableDate.setDate(date);
         unavailableDate.setReason(reason);
         unavailableDate.setCreated_at(new Timestamp(Instant.now().toEpochMilli()));
@@ -74,7 +74,7 @@ public class UnavailableDatesService {
             .filter(date -> !unavailableDatesRepo.existsBySubcontractorAndDate(subcontractor, date))
             .map(date -> {
                 UnavailableDates unavailableDate = new UnavailableDates();
-                unavailableDate.setSubcontractorEntity(subcontractor);
+                unavailableDate.setSubcontractor(subcontractor);
                 unavailableDate.setDate(date);
                 unavailableDate.setReason(reason);
                 unavailableDate.setCreated_at(new Timestamp(Instant.now().toEpochMilli()));

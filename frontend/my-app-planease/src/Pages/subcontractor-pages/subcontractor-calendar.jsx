@@ -7,6 +7,7 @@ import NavPanel from "../../Components/subcon-navpanel";
 import { Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Button, TextField } from '@mui/material';
 import { AuthContext } from '../../Components/AuthProvider';
 import axios from 'axios';
+import '../../index.css';
 
 const localizer = momentLocalizer(moment);
 
@@ -44,7 +45,7 @@ const SubcontractorCalendar = () => {
           }
         });
         
-        const email = userResponse.data.schoolId; // The API returns email as "schoolId"
+        const email = userResponse.data.email; // The API returns email as "schoolId"
         
         if (!email) {
           setError('User email not found');
@@ -60,6 +61,8 @@ const SubcontractorCalendar = () => {
             'Authorization': `Bearer ${token}`
           }
         });
+
+        console.log(response.data);
         
         // Transform dates from the backend into the format needed by the calendar
         const formattedDates = response.data.map(item => ({
@@ -138,7 +141,7 @@ const SubcontractorCalendar = () => {
         }
       });
       
-      const email = userResponse.data.schoolId;
+      const email = userResponse.data.email;
 
       if (!email) {
         throw new Error('User email not found');
@@ -171,6 +174,8 @@ const SubcontractorCalendar = () => {
   // Function to confirm unavailability
   const handleConfirmUnavailability = async () => {
     const selectedDate = confirmDialog.date;
+
+    console.log(selectedDate);
     
     try {
       // First, directly store it in the local state to give immediate feedback

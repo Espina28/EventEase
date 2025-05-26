@@ -105,14 +105,14 @@ public class UserController {
             // Extract the actual token (remove "Bearer " prefix)
             token = token.substring(7);
     
-            String schoolId = tokenService.extractEmail(token);
-            if (schoolId == null || schoolId.isEmpty()) {
+            String email = tokenService.extractEmail(token);
+            if (email == null || email.isEmpty()) {
                 return ResponseEntity.status(401).body("Invalid token: Email missing");
             }
     
             // System.out.println("Fetching profile image for schoolId: " + schoolId); // Debugging log
     
-            String profileImage = userService.getUserProfileImage(schoolId);
+            String profileImage = userService.getUserProfileImage(email);
     
             if (profileImage == null || profileImage.isEmpty()) {
                 return ResponseEntity.badRequest().body("No profile image found");

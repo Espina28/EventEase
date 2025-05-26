@@ -29,7 +29,7 @@ public class UnavailableDatesController {
     }
     
     // Add a new unavailable date
-    @PostMapping
+    @PostMapping()
     public ResponseEntity<?> addUnavailableDate(@RequestBody UnavailableDatesDTO dto) {
         try {
             UnavailableDates savedDate = unavailableDatesService.addUnavailableDate(
@@ -63,15 +63,15 @@ public class UnavailableDatesController {
     
     // Delete an unavailable date
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteUnavailableDate(@PathVariable int id) {
+    public ResponseEntity<?> deleteUnavailableDate(@PathVariable String id) {
         try {
             // Check if the date exists first
-            UnavailableDates date = unavailableDatesService.getUnavailableDateById(id);
+            UnavailableDates date = unavailableDatesService.getUnavailableDateById(Integer.parseInt(id));
             if (date == null) {
                 return ResponseEntity.notFound().build();
             }
             
-            unavailableDatesService.deleteUnavailableDate(id);
+            unavailableDatesService.deleteUnavailableDate(Integer.parseInt(id));
             return ResponseEntity.noContent().build();
         } catch (Exception e) {
             Map<String, String> errorResponse = new HashMap<>();

@@ -40,16 +40,16 @@ const NavPanel = () => {
           Calendar
         </NavLink>
 
-        <NavLink
-          to="/showcase"
-          className={({ isActive }) =>
-            `flex items-center gap-3 px-3 py-2 rounded-md transition 
-            ${isActive ? "text-blue-600 font-semibold" : "text-gray-600 hover:text-blue-500"}`
-          }
-        >
-          <FileText size={20} />
-          Showcase
-        </NavLink>
+        {/*<NavLink*/}
+        {/*  to="/showcase"*/}
+        {/*  className={({ isActive }) =>*/}
+        {/*    `flex items-center gap-3 px-3 py-2 rounded-md transition */}
+        {/*    ${isActive ? "text-blue-600 font-semibold" : "text-gray-600 hover:text-blue-500"}`*/}
+        {/*  }*/}
+        {/*>*/}
+        {/*  <FileText size={20} />*/}
+        {/*  Showcase*/}
+        {/*</NavLink>*/}
       </nav>
     </div>
   );

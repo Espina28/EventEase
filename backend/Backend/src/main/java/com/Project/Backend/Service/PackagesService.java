@@ -1,5 +1,6 @@
 package com.Project.Backend.Service;
 
+import com.Project.Backend.DTO.ServicePackageDTO;
 import com.Project.Backend.Entity.PackageServicesEntity;
 import com.Project.Backend.Entity.PackagesEntity;
 import com.Project.Backend.Repository.PackageServicesRepository;
@@ -54,7 +55,18 @@ public class PackagesService {
         }
     }
 
-    public List<PackagesEntity> getAllPackages() {
-        return packagesRepository.findAll();
+    public PackagesEntity findByName(String packageName){
+        return packagesRepository.findPackageByPackageName(packageName);
     }
+
+
+
+    public List<ServicePackageDTO> getAllServiceByPackageName(String packageName){
+        return packagesRepository.findServicePackagesByPackageName(packageName);
+    }
+
+    public List<ServicePackageDTO> getAllPackages() {
+        return packagesRepository.findALlPackageServices();
+    }
+
 }

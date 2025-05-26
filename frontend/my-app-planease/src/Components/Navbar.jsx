@@ -15,6 +15,7 @@ export const PROFILE_UPDATED_EVENT = "profileUpdated"
 const Navbar = () => {
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false)
   const [profileModalOpen, setProfileModalOpen] = useState(false)
+  const [unreadCount, setUnreadCount] = useState(0)
   const [user, setUser] = useState({
     firstname: "",
     lastname: "",
@@ -38,11 +39,16 @@ const Navbar = () => {
       })
 
       setUser({
+        userId: data.userId,
         firstname: data.firstname || "",
         lastname: data.lastname || "",
         email: data.email || "",
         profilePicture: data.profilePicture || null,
       })
+
+      // Fetch unread notification count after getting user data
+      fetchUnreadCount(data.userId, token)
+
       setLoading(false)
     } catch (error) {
       console.error("Failed to fetch user data:", error)
@@ -50,10 +56,34 @@ const Navbar = () => {
     }
   }
 
+  const fetchUnreadCount = async (userId, token) => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/notifications/count?userId=${userId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      setUnreadCount(response.data.count)
+    } catch (error) {
+      console.error("Failed to fetch unread count:", error)
+    }
+  }
+
   // Fetch user data when component mounts
   useEffect(() => {
     fetchUserData()
-  }, [])
+
+    // Set up interval to periodically check for new notifications (every 30 seconds)
+    const intervalId = setInterval(() => {
+      if (user.userId) {
+        const token = localStorage.getItem("token")
+        if (token) {
+          fetchUnreadCount(user.userId, token)
+        }
+      }
+    }, 30000)
+
+    // Clean up interval on unmount
+    return () => clearInterval(intervalId)
+  }, [user.userId])
 
   // Listen for profile update events
   useEffect(() => {
@@ -99,6 +129,12 @@ const Navbar = () => {
     return user.firstname ? user.firstname.charAt(0).toUpperCase() : "U"
   }
 
+  // Reset unread count when navigating to notifications page
+  const handleNotificationClick = () => {
+    setUnreadCount(0)
+    navigate("/notifications")
+  }
+
   return (
     <>
       {/* Navbar */}
@@ -122,8 +158,13 @@ const Navbar = () => {
 
             {/* Right side - notifications and profile */}
             <div className="flex items-center space-x-4">
-              <button className="text-gray-600 hover:text-blue-500">
+              <button onClick={handleNotificationClick} className="text-gray-600 hover:text-blue-500 relative">
                 <Bell size={20} />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
+                )}
               </button>
 
               {/* Profile dropdown */}

@@ -7,6 +7,8 @@ public class CreateSubcontractorRequest {
     private UserEntity user;
     private int offeringServiceId;
     private String service;
+    private String serviceCategory;
+    private int servicePrice; 
     private String description;
 
     public UserEntity getUser() {
@@ -39,5 +41,21 @@ public class CreateSubcontractorRequest {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getServiceCategory() {
+        return serviceCategory;
+    }
+
+    public void setServiceCategory(String serviceCategory) {
+        this.serviceCategory = serviceCategory;
+    }
+
+    public int getServicePrice() {
+        return servicePrice;
+    }
+
+    public void setServicePrice(int servicePrice) {
+        this.servicePrice = servicePrice;
     }
 }

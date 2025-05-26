@@ -2,6 +2,7 @@ package com.Project.Backend.Service;
 
 import com.Project.Backend.DTO.CreateShowcaseMedia;
 import com.Project.Backend.DTO.ShowcaseDTO;
+import com.Project.Backend.DTO.ShowcaseMediaDTO;
 import com.Project.Backend.Entity.ShowcaseEntity;
 import com.Project.Backend.Entity.ShowcaseMediaEntity;
 import com.Project.Backend.Repository.ShowcaseMediaRepository;
@@ -74,17 +75,18 @@ public class ShowcaseMediaService {
         return null; // Waiting for more chunks
     }
 
-    public List<ShowcaseMediaEntity> createShowcaseMedia(ShowcaseMediaEntity[] imageUrls, int showcaseId) {
+    public List<ShowcaseMediaEntity> createShowcaseMedia(List<ShowcaseMediaDTO> imageUrls, ShowcaseEntity showcase) {
         List<ShowcaseMediaEntity> savedMedia = new ArrayList<>();
         try {
-            ShowcaseEntity showcase = showcaseService.findShowcaseById(showcaseId);
-            for (ShowcaseMediaEntity media : imageUrls) {
+//            ShowcaseEntity showcase = showcaseService.findShowcaseById(showcase.getShowcase_id());
+            for (ShowcaseMediaDTO media : imageUrls) {
                 ShowcaseMediaEntity newMedia = new ShowcaseMediaEntity();
-                newMedia.setShowcaseMedia_imageurl(media.getShowcaseMedia_imageurl());
-                newMedia.setShowcaseMedia_fileName(media.getShowcaseMedia_fileName());
-                newMedia.setShowcaseEntity(showcase);
+                System.out.println(media.getImageUrl());
+                System.out.println(media.getFileName());
+                newMedia.setShowcaseMedia_imageurl(media.getImageUrl());
+                newMedia.setShowcaseMedia_fileName(media.getFileName());
+                newMedia.setShowcase(showcase);
                 savedMedia.add(showcaseMediaRepository.save(newMedia));
-                System.out.println("Saved media: " + savedMedia);
             }
             return savedMedia;
         } catch (Exception e) {
@@ -92,30 +94,12 @@ public class ShowcaseMediaService {
         }
     }
 
-//    public ShowcaseMediaEntity updateShowcaseMedia(ShowcaseMediaEntity[] imageUrls, int showcaseId) {
-//        try {
-//            ShowcaseEntity showcase = showcaseService.findShowcaseById(showcaseId);
-//
-//            for(ShowcaseMediaEntity newMedia : imageUrls){
-//                ShowcaseMediaEntity existingMedia = showcaseMediaRepository.findShowcaseMediaByImage_url(newMedia.getShowcaseMedia_imageurl());
-//                if(existingMedia != null){
-//                    if(!existingMedia.getShowcaseMedia_imageurl().equals(newMedia.getShowcaseMedia_imageurl())){
-//                        existingMedia.setShowcaseMedia_imageurl(newMedia.getShowcaseMedia_imageurl());
-//                        existingMedia.setShowcaseMedia_fileName(newMedia.getShowcaseMedia_fileName());
-//                        showcaseMediaRepository.save(existingMedia);
-//                    }
-//                }
-//                ShowcaseMediaEntity newMediaEntity = new ShowcaseMediaEntity();
-//                newMediaEntity.setShowcaseMedia_imageurl(newMedia.getShowcaseMedia_imageurl());
-//                newMediaEntity.setShowcaseMedia_fileName(newMedia.getShowcaseMedia_fileName());
-//                newMediaEntity.setShowcaseEntity(showcase);
-//                showcaseMediaRepository.save(newMediaEntity);
-//            }
-//            return createShowcaseMedia.getImageUrl();
-//        }catch (Exception e){
-//            throw new RuntimeException("Error in saving showcase media");
-//        }
-//    }
+    public void deleteMediaByIds(List<Integer> mediaIds) {
+        for (Integer mediaId : mediaIds) {
+            System.out.println("deleting :" + mediaId);
+            showcaseMediaRepository.deleteById(mediaId);
+        }
+    }
 
 
     public List<ShowcaseMediaEntity> getShowcaseMediaByShowcaseTitle(String showcaseTitle) {

@@ -1,10 +1,13 @@
 package com.Project.Backend.Entity;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import jakarta.persistence.*;
 
 @Entity
 @Table(name = "package_services")
+//@JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "package_service_id")
 public class PackageServicesEntity {
 
     @Id
@@ -17,9 +20,9 @@ public class PackageServicesEntity {
     private PackagesEntity packages;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "offering_service_id")
-    @JsonBackReference("offering-package-service")
-    private ServiceOfferedEntity serviceOffered;
+    @JoinColumn(name = "subcontractor_id")
+    @JsonBackReference("subcontractor-package-service")
+    private SubcontractorEntity subcontractor;
 
     public int getPackage_service_id() {
         return package_service_id;
@@ -37,11 +40,11 @@ public class PackageServicesEntity {
         this.packages = packages;
     }
 
-    public ServiceOfferedEntity getServiceOffered() {
-        return serviceOffered;
+    public SubcontractorEntity getSubcontractor() {
+        return subcontractor;
     }
 
-    public void setServiceOffered(ServiceOfferedEntity serviceOffered) {
-        this.serviceOffered = serviceOffered;
+    public void setSubcontractor(SubcontractorEntity subcontractor) {
+        this.subcontractor = subcontractor;
     }
 }

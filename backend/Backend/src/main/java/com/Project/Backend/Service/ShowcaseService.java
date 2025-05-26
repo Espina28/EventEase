@@ -25,7 +25,6 @@ public class ShowcaseService {
         SubcontractorEntity subcontractor = null;
         ShowcaseEntity newShowcase =  new ShowcaseEntity();
         //save the image url to ShowcaseMediaEntity\
-
         try {
             subcontractor = subcontractorService.getSubcontractorByEmail(showcase.getEmail());
             newShowcase.setShowcase_title(showcase.getTitle());
@@ -39,14 +38,17 @@ public class ShowcaseService {
 
     public ShowcaseEntity editShowcase(ShowcaseDTO showcase, int showcase_id) {
         try {
-            ShowcaseEntity existingShowcase = showcaseRepository.findById(showcase_id).orElse(null);
-            if (existingShowcase != null) {
-                existingShowcase.setShowcase_title(showcase.getTitle());
-                existingShowcase.setShowcase_description(showcase.getDescription());
-                return showcaseRepository.save(existingShowcase);
-            } else {
-                throw new RuntimeException("Showcase not found with id: " + showcase_id);
-            }
+            // Retrieve existing showcase
+            ShowcaseEntity existingShowcase = showcaseRepository.findById(showcase_id)
+                    .orElseThrow(() -> new RuntimeException("Showcase not found with id: " + showcase_id));
+
+            // Update fields
+            existingShowcase.setShowcase_title(showcase.getTitle());
+            existingShowcase.setShowcase_description(showcase.getDescription());
+
+
+            // Save and return updated showcase
+            return showcaseRepository.save(existingShowcase);
         } catch (Exception e) {
             throw new RuntimeException("Error editing showcase", e);
         }

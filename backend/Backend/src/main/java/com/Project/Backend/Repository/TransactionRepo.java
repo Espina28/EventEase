@@ -11,12 +11,23 @@ import java.util.List;
 public interface TransactionRepo extends JpaRepository<TransactionsEntity, Integer> {
 
     // Change from findByEventEntity_Event_id to findByEventEntityId
-    @Query("SELECT t FROM TransactionsEntity t WHERE t.eventEntity.event_Id= :eventId")
+    @Query("SELECT t FROM TransactionsEntity t WHERE t.event.event_Id= :eventId")
     List<TransactionsEntity> findByEventEntityId(int eventId);
-    
-    // Change from findByTransaction_status to findByTransactionStatus
-    List<TransactionsEntity> findByTransactionStatus(TransactionsEntity.Status status);
+
+    @Query("SELECT t FROM TransactionsEntity t WHERE t.transactionStatus = :status AND t.transactionIsActive = :isActive")
+    List<TransactionsEntity> findByTransactionStatusAndIsActive(TransactionsEntity.Status status, boolean isActive);
     
     // Change from findByTransaction_isActiveTrue to findByTransactionIsActiveTrue
     List<TransactionsEntity> findByTransactionIsActiveTrue();
+
+    @Query("SELECT t FROM TransactionsEntity t " +
+            "JOIN FETCH t.user u " +
+            "JOIN FETCH t.event e " +
+            "LEFT JOIN FETCH t.eventServices es " +
+            "LEFT JOIN FETCH es.subcontractor")
+    List<TransactionsEntity> findAllWithRelations();
+
+    @org.springframework.data.jpa.repository.Query("SELECT t FROM TransactionsEntity t WHERE t.user.userId = :userId")
+    List<TransactionsEntity> findByUserId(int userId);
+
 }

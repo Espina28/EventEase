@@ -1,8 +1,6 @@
 package com.Project.Backend.Service;
 
 import com.Project.Backend.Entity.PackageServicesEntity;
-import com.Project.Backend.Entity.PackagesEntity;
-import com.Project.Backend.Entity.ServiceOfferedEntity;
 import com.Project.Backend.Repository.PackageServicesRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -14,10 +12,6 @@ public class PackageServicesService {
     private PackageServicesRepository packageServicesRepository;
     @Autowired
     private PackagesService packagesService;
-
-    @Autowired
-    private ServiceOfferedService serviceOfferedService;
-
 
     public PackageServicesEntity create(PackageServicesEntity packageServices) {
         return packageServicesRepository.save(packageServices);

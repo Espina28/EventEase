@@ -1,13 +1,14 @@
 package com.Project.Backend.Entity;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.*;
 import jakarta.persistence.*;
+import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
 
 import java.util.List;
 
 @Entity
 @Table(name = "Showcase")
+//@JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "showcase_id")
 public class ShowcaseEntity {
 
     @Id
@@ -27,14 +28,6 @@ public class ShowcaseEntity {
     @OneToMany(mappedBy = "showcase", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference(value = "showcase-showcaseMedia")
     private List<ShowcaseMediaEntity> showcaseMediaEntity;
-
-    public SubcontractorEntity getSubcontractor() {
-        return subcontractor;
-    }
-
-    public void setSubcontractor(SubcontractorEntity subcontractor) {
-        this.subcontractor = subcontractor;
-    }
 
     public int getShowcase_id() {
         return showcase_id;
@@ -58,6 +51,14 @@ public class ShowcaseEntity {
 
     public void setShowcase_description(String showcase_description) {
         this.showcase_description = showcase_description;
+    }
+
+    public SubcontractorEntity getSubcontractor() {
+        return subcontractor;
+    }
+
+    public void setSubcontractor(SubcontractorEntity subcontractor) {
+        this.subcontractor = subcontractor;
     }
 
     public List<ShowcaseMediaEntity> getShowcaseMediaEntity() {

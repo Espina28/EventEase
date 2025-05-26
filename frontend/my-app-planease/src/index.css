@@ -1,4 +1,7 @@
 @import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 @media (prefers-color-scheme: light) {
   :root {
@@ -13,6 +16,23 @@
   }
 }
 
+html {
+  scroll-behavior: smooth;
+  scroll-snap-type: y proximity; 
+  overflow-y: scroll;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+}
+
+.snap-section {
+  scroll-snap-align: start;
+  min-height: 100vh;
+  width: 100%;
+}
+
 .font-poppins {
   font-family: "Poppins", sans-serif;
   font-weight: 400;
@@ -23,3 +43,20 @@
   font-family: "Open Sans", sans-serif;
 }
 
+
+
+/*This is for the Big Calendar*/
+/* For month view day cells */
+.rbc-month-view .rbc-date-cell {
+  cursor: pointer;
+}
+
+/* Optional: also apply to the whole day slot area */
+.rbc-month-view .rbc-day-bg:hover {
+  cursor: pointer;
+}
+
+.rbc-month-view .rbc-day-bg:hover {
+  background-color: rgba(0, 123, 255, 0.1); /* light blue on hover */
+  transition: background-color 0.2s;
+}
