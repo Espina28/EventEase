@@ -1,6 +1,11 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContentText from '@mui/material/DialogContentText';
 import Divider from "@mui/material/Divider"
 import Navbar from "../../Components/Navbar"
 import Typography from "@mui/material/Typography"
@@ -29,10 +34,6 @@ import {
   Select,
   MenuItem,
   InputAdornment,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Chip,
 } from "@mui/material"
 import { useTheme } from "@mui/material/styles"
@@ -161,6 +162,7 @@ const AdminSubContractors = () => {
   const [openModal, setOpenModal] = useState(false)
   const [selectedSubcontractor, setSelectedSubcontractor] = useState(null)
   const [loadingSubcontractorDetails, setLoadingSubcontractorDetails] = useState(false)
+  const [openDeleteConfirmation, setOpenDeleteConfirmation] = useState(false)
 
   const handleOpen = () => setOpen(true)
   const handleClose = () => {
@@ -618,6 +620,9 @@ const AdminSubContractors = () => {
 
       // Update the subcontractors list
       setSubcontractors((prev) => prev.filter((subcontractor) => subcontractor.subcontractor_Id !== id))
+      
+      // Update the category counts after successful deletion
+      fetchCategoryCounts()
 
       setSnackbar({
         open: true,
@@ -804,6 +809,14 @@ const AdminSubContractors = () => {
   const handleCloseModal = () => {
     setOpenModal(false)
     setSelectedSubcontractor(null)
+  };
+
+  const handleOpenDeleteConfirmation = () => {
+    setOpenDeleteConfirmation(true)
+  };
+  
+  const handleCloseDeleteConfirmation = () => {
+    setOpenDeleteConfirmation(false)
   };
 
   return (
@@ -1141,9 +1154,65 @@ const AdminSubContractors = () => {
             </Typography>
           )}
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseModal} color="primary">
+        <DialogActions sx={{ display: 'flex', justifyContent: 'space-between', px: 3, pb: 2 }}>
+          <Button 
+            variant="contained" 
+            color="error" 
+            onClick={handleOpenDeleteConfirmation}
+            startIcon={<CloseIcon />}
+            disabled={loadingSubcontractorDetails || !selectedSubcontractor}
+          >
+            Delete Subcontractor
+          </Button>
+          <Button 
+            variant="outlined" 
+            onClick={handleCloseModal} 
+            color="primary"
+          >
             Close
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={openDeleteConfirmation}
+        onClose={handleCloseDeleteConfirmation}
+        aria-labelledby="delete-dialog-title"
+        aria-describedby="delete-dialog-description"
+      >
+        <DialogTitle id="delete-dialog-title" sx={{ bgcolor: '#f5f5f5' }}>
+          {"Confirm Delete"}
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="delete-dialog-description">
+            Are you sure you want to delete this subcontractor? This action cannot be undone.
+            {selectedSubcontractor && (
+              <Typography variant="subtitle2" color="error" sx={{ mt: 1, fontWeight: 'bold' }}>
+                {selectedSubcontractor.user
+                  ? `${selectedSubcontractor.user.firstname} ${selectedSubcontractor.user.lastname}`
+                  : "This subcontractor"} will be permanently removed as a subcontractor.
+              </Typography>
+            )}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDeleteConfirmation} color="primary">
+            Cancel
+          </Button>
+          <Button 
+            onClick={() => {
+              if (selectedSubcontractor) {
+                handleDeleteSubcontractor(selectedSubcontractor.subcontractor_Id);
+                handleCloseDeleteConfirmation();
+                handleCloseModal();
+              }
+            }} 
+            color="error" 
+            variant="contained" 
+            autoFocus
+          >
+            Delete
           </Button>
         </DialogActions>
       </Dialog>

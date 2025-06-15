@@ -19,25 +19,25 @@ public class SubcontractorEntity {
     private String subcontractor_serviceCategory;
     private double subcontractor_service_price;
 
-    @OneToOne
+    @OneToOne(cascade = CascadeType.REMOVE)
     @JoinColumn(name = "user_id")
     @JsonManagedReference("subcontractor-user")
     private UserEntity user;
 
     //here
-    @OneToMany(mappedBy = "subcontractor")
+    @OneToMany(mappedBy = "subcontractor", cascade = CascadeType.REMOVE)
     @JsonManagedReference("subcontactor-showcase")
     private List<ShowcaseEntity> showcase;
 
-    @OneToMany(mappedBy = "subcontractor", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "subcontractor", fetch = FetchType.LAZY, cascade = CascadeType.REMOVE)
     @JsonManagedReference(value = "subcontractor-unavailable-dates")
     private List<UnavailableDatesEntity> unavailableDates;
 
-    @OneToMany(mappedBy = "subcontractor")
+    @OneToMany(mappedBy = "subcontractor", cascade = CascadeType.REMOVE)
     @JsonManagedReference("subcontractor-eventservice")
     private List<EventServiceEntity> eventName;
 
-    @OneToMany(mappedBy = "subcontractor")
+    @OneToMany(mappedBy = "subcontractor", cascade = CascadeType.REMOVE)
     @JsonManagedReference("subcontractor-package-service")
     private List<PackageServicesEntity> packageServices;
 
