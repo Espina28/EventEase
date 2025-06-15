@@ -71,7 +71,7 @@ const SelectServicePage = () => {
             subcontractor.user?.firstname && subcontractor.user?.lastname
               ? `${subcontractor.user.firstname} ${subcontractor.user.lastname}`
               : "Service Provider",
-          category: subcontractor.subcontractor_serviceCategory,
+          category: subcontractor.category,
         }))
 
         console.log("Transformed services with prices:", services)
@@ -266,7 +266,7 @@ const SelectServicePage = () => {
               <h2 className="section-title">Select Services</h2>
 
               {/* Tabs */}
-              <div className="service-tabs">
+              {/* <div className="service-tabs">
                 <button
                   className={`tab-button ${activeTab === "custom" ? "active" : ""}`}
                   onClick={() => handleTabChange("custom")}
@@ -279,7 +279,7 @@ const SelectServicePage = () => {
                 >
                   Package
                 </button>
-              </div>
+              </div> */}
 
               {/* Tab Content */}
               <div className="tab-content">
@@ -301,7 +301,7 @@ const SelectServicePage = () => {
                             <div className="service-icon">{service.icon}</div>
                           </div>
                           <div className="service-info">
-                            <div className="service-name">{service.name}</div>
+                            <div className="service-name">{service.category}</div>
                             <div className="service-provider">by {service.subcontractorName}</div>
                             <div className="service-price">{formatAsPeso(service.price)}</div>
                           </div>
