@@ -16,7 +16,7 @@ public class EventServiceEntity {
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JsonBackReference("subcontractor-eventservice")
-    @JoinColumn(name = "subcontractor_id")
+    @JoinColumn(name = "subcontractor_id", nullable = true)
     private SubcontractorEntity subcontractor;
 
 

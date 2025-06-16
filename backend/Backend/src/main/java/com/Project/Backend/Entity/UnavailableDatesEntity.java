@@ -20,8 +20,8 @@ public class UnavailableDatesEntity {
     private String reason;
     private Timestamp created_at;
 
-    @ManyToOne
-    @JoinColumn(name = "subcontractor_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "subcontractor_id", nullable = true)
     @JsonBackReference(value = "subcontractor-unavailable-dates")
     private SubcontractorEntity subcontractor;
 

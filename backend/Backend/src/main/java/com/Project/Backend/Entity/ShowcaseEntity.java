@@ -19,9 +19,9 @@ public class ShowcaseEntity {
     private String showcase_description;
 
     //here
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JsonBackReference("subcontactor-showcase")
-    @JoinColumn(name = "subcontractor_id")
+    @JoinColumn(name = "subcontractor_id", nullable = true)
     private SubcontractorEntity subcontractor;
 
 
