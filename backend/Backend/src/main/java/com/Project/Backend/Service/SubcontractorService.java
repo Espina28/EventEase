@@ -72,8 +72,26 @@ public class SubcontractorService {
 
 
 
+    @Autowired
+    private UserService userService;
+
     public void deleteSubcontractor(int id) {
-        subContractorRepository.deleteById(id);
+        // First get the subcontractor to access its associated user
+        SubcontractorEntity subcontractor = subContractorRepository.findById(id).orElse(null);
+        
+        if (subcontractor != null && subcontractor.getUser() != null) {
+            // Get the user ID before deleting the subcontractor
+            int userId = subcontractor.getUser().getUserId();
+            
+            // Delete the subcontractor first
+            subContractorRepository.deleteById(id);
+            
+            // Then delete the associated user
+            userService.deleteUser(userId);
+        } else {
+            // Just delete the subcontractor if no user is associated
+            subContractorRepository.deleteById(id);
+        }
     }
 
     public String editDescription(String email, String description) throws SdkClientException {
