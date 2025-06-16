@@ -27,7 +27,7 @@ export default function SignUpPage() {
   const [showOTPModal, setShowOTPModal] = useState(false)
   const [otpValue, setOtpValue] = useState("")
   const [otpError, setOtpError] = useState("")
-  const [otpTimer, setOtpTimer] = useState(60)
+  const [otpTimer, setOtpTimer] = useState(300)
   const [isResendingOTP, setIsResendingOTP] = useState(false)
   const [isSendingOTP, setIsSendingOTP] = useState(false)
   const [pendingRegistrationData, setPendingRegistrationData] = useState(null)
@@ -83,6 +83,13 @@ export default function SignUpPage() {
   const [countries, setCountries] = useState([
     { code: "PH", dialCode: "+63", flag: "🇵🇭", name: "Philippines" }, // Default while loading
   ])
+
+  // Format seconds to MM:SS display
+  const formatTime = (seconds) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
 
   // Generate confetti particles data with useMemo to ensure it doesn't regenerate on re-renders
   const confettiParticles = useMemo(() => {
@@ -202,7 +209,7 @@ export default function SignUpPage() {
   // Start timer only when modal is open and isSendingOTP becomes false
   useEffect(() => {
     if (showOTPModal && !isSendingOTP) {
-      setOtpTimer(60)
+      setOtpTimer(300)
       if (otpTimerRef.current) clearInterval(otpTimerRef.current)
       otpTimerRef.current = setInterval(() => {
         setOtpTimer((prev) => {
@@ -1160,7 +1167,7 @@ export default function SignUpPage() {
                       <div className="text-sm text-gray-500">
                         {otpTimer > 0 ? (
                           <>
-                            Resend OTP in <span className="font-semibold">{otpTimer}s</span>
+                            Resend OTP in <span className="font-semibold">{formatTime(otpTimer)}</span>
                           </>
                         ) : (
                           <button
@@ -1180,7 +1187,7 @@ export default function SignUpPage() {
                               }
                               setIsResendingOTP(false)
                               setIsSendingOTP(false)
-                              setOtpTimer(60)
+                              setOtpTimer(300)
                               if (otpTimerRef.current) clearInterval(otpTimerRef.current)
                               otpTimerRef.current = setInterval(() => {
                                 setOtpTimer((prev) => {
