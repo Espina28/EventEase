@@ -141,7 +141,7 @@ const EventPage = () => {
                 <button className="mt-4 px-4 py-2 bg-gray-900 text-white text-sm rounded hover:bg-gray-800">
                   CLICK FOR MORE DETAILS
                 </button>
-              </Link>
+              </Link> 
             </div>
           ))}
         </div>

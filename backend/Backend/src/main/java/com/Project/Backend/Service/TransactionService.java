@@ -359,7 +359,7 @@ public class TransactionService {
             transaction.setTransactionIsActive(true);
             transaction.setTransactionisApprove(false);
             
-            // Don't set payment yet - we'll do this after saving the transaction
+
             transaction.setPayment(null);
             
             // 6. Handle Package OR Custom Services (mutually exclusive)

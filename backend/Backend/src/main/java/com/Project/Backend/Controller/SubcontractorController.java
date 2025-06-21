@@ -27,10 +27,10 @@ public class SubcontractorController {
 
     @Autowired
     private SubcontractorService subcontractorService;
-    @Autowired
-    private TransactionService transactionService;
-    @Autowired
-    private EventServiceService eventServiceService;
+//    @Autowired
+//    private TransactionService transactionService;
+//    @Autowired
+//    private EventServiceService eventServiceService;
 
     @GetMapping("/getall")
     public ResponseEntity<List<SubcontractorEntity>> getAllSubcontractors() {

@@ -989,7 +989,7 @@ const SubcontractorDashboard = () => {
 
                         {/* Buttons */}
                         <Box className="flex justify-end gap-3">
-                            <Button
+                            {/* <Button
                                 variant="contained"
                                 component="label"
                                 disabled={isUploading || selectedImage.length !== 0}
@@ -1004,14 +1004,14 @@ const SubcontractorDashboard = () => {
                             </Button>
                             <Typography variant="caption" color="textSecondary" sx={{ mt: 0.5 }}>
                                 (Maximum allowed video size: 500MB)
-                            </Typography>
-                            <Button
+                            </Typography> */}
+                            {/* <Button
                                 variant="outlined"
                                 onClick={() => setEditMediaOpen(true)}
                                 disabled={isUploading || selectedImage.length === 0}
                             >
                                 Edit All
-                            </Button>
+                            </Button> */}
                             <Button
                                 variant="contained"
                                 onClick={handleSubmit}
