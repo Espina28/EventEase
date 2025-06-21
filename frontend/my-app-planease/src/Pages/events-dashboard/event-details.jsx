@@ -62,9 +62,9 @@ const EventDetails = () => {
         <div className="flex-1">
           <h1 className="text-3xl font-bold mb-4">{event.event_name || "Untitled Event"}</h1>
           <p className="text-gray-600 mb-6">{event.event_description || "No description available."}</p>
-          <p className="text-xl font-semibold mb-4 text-green-600">
+          {/* <p className="text-xl font-semibold mb-4 text-green-600">
             {event.event_price != null ? `₱${event.event_price.toLocaleString()}` : "Price not available"}
-          </p>
+          </p> */}
 
           {!event.event_isAvailable ? (
             <button className="bg-gray-400 text-white px-6 py-2 rounded-md cursor-not-allowed" disabled>

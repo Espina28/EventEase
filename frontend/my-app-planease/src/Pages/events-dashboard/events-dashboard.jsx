@@ -82,9 +82,9 @@ const EventPage = () => {
               <p className="text-gray-600 mb-2 flex-1 text-left">
                 {event.event_summary || "No description available."}
               </p>
-              <p className="text-gray-700 font-medium mb-4">
+              {/* <p className="text-gray-700 font-medium mb-4">
                 {event.event_price != null ? `₱${event.event_price.toLocaleString()}` : "Price not available"}
-              </p>
+              </p> */}
 
               {/* Button */}
               {!event.event_isAvailable ? (
@@ -141,7 +141,7 @@ const EventPage = () => {
                 <button className="mt-4 px-4 py-2 bg-gray-900 text-white text-sm rounded hover:bg-gray-800">
                   CLICK FOR MORE DETAILS
                 </button>
-              </Link>
+              </Link> 
             </div>
           ))}
         </div>
