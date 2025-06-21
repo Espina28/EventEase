@@ -30,6 +30,7 @@ import InputDetailsPagePackage from './Pages/booking-pages/inputdetails-page-pac
 import PaymentProofPagePackage from './Pages/booking-pages/paymentproof-page-package.jsx'
 import PreviewBookingPagePackage from './Pages/booking-pages/previewbooking-page-package.jsx'
 import AdminPackages from './Pages/admin-pages/admin-your-packages.jsx'
+import UserBookingsPage from './Pages/user-bookings.jsx'
 
 function App() {
   return (
@@ -66,6 +67,14 @@ function App() {
               <UserReservations />
             </ProtectedRoute>
             } />
+
+          <Route path="/my-bookings" element={
+            <ProtectedRoute>
+              <Navbar />
+              <UserBookingsPage />
+              <Footer />
+            </ProtectedRoute>
+          } />
 
           <Route path="/events-dashboard" element={
             <>

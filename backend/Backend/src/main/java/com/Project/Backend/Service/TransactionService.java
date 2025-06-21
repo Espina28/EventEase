@@ -453,11 +453,49 @@ public class TransactionService {
             .map(GetTransactionDTO::new)
             .collect(Collectors.toList());
     }
+    
+
+    //new function for user transactions - Ivan
+    public List<GetTransactionDTO> getAllTransactionsByUserEmail(String email) {
+        System.out.println("Fetching transactions for user with email: " + email);
+        List<TransactionsEntity> transactions = transactionRepo.findByUserEmail(email);
+        System.out.println("Found " + transactions.size() + " transactions for user");
+        
+        // Convert to DTOs with all status types (don't filter by status)
+        List<GetTransactionDTO> result = new ArrayList<>();
+
+        for(TransactionsEntity transaction : transactions){
+            GetTransactionDTO getTransactionDTO = new GetTransactionDTO();
+            getTransactionDTO.setTransaction_Id(transaction.getTransaction_Id());
+            getTransactionDTO.setUserEmail(transaction.getUser().getEmail());
+            getTransactionDTO.setUserName(transaction.getUser().getFirstname() + " " + transaction.getUser().getLastname());
+            getTransactionDTO.setPhoneNumber(transaction.getUser().getPhoneNumber());
+            getTransactionDTO.setUserAddress(transaction.getUser().getProvince() + " " + transaction.getUser().getBarangay());
+
+            //true if its a custom
+            if (transaction.getEventServices() != null && transaction.getEvent() != null) {
+                getTransactionDTO.setEventName(transaction.getEvent().getEvent_name());
+                getTransactionDTO.setSubcontractors(getSubcontractorsOfEvent(transaction.getEventServices()));
+            }else if (transaction.getPackages() != null) {
+                List<SubcontractorEntity> subcontractor = subcontractorService.getSubcontractorByPackageName(transaction.getPackages().getPackageName());
+                getTransactionDTO.setPackages(transaction.getPackages().getPackageName());
+                getTransactionDTO.setSubcontractors(getSubcontractorsOfPackages(subcontractor));
+            }
+
+            getTransactionDTO.setTransactionVenue(transaction.getTransactionVenue());
+            getTransactionDTO.setTransactionStatus(transaction.getTransactionStatus().toString());
+            getTransactionDTO.setTransactionDate(transaction.getTransactionDate());
+            getTransactionDTO.setTransactionNote(transaction.getTransactionNote());
+            getTransactionDTO.setPayment(transaction.getPayment());
+
+            result.add(getTransactionDTO);
+        }
+        return result;
+    }
         @Transactional
     public TransactionsEntity createPackageBooking(PackageBookingDTO packageBookingData, MultipartFile paymentProof) throws IOException {
 
         System.out.println("=== PACKAGE BOOKING SERVICE DEBUG ===");
-        System.out.println("Creating package booking for user: " + packageBookingData.getUserEmail());
 
         try {
             // 1. Find the user by email

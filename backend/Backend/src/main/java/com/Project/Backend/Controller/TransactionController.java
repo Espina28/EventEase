@@ -85,6 +85,15 @@ public class TransactionController {
         List<GetTransactionDTO> transactions = transactionService.getEventServicesByEmail(email);
         return ResponseEntity.ok(transactions);
     }
+    
+    //new function for user transactions - Ivan
+    @GetMapping("/getAllUserTransactionsByEmail/{email}")
+    public ResponseEntity<List<GetTransactionDTO>> getUserTransactionsByEmailAddress(@PathVariable String email) {
+        System.out.println("Controller: Getting all transactions for user email: " + email);
+        List<GetTransactionDTO> transactions = transactionService.getAllTransactionsByUserEmail(email);
+        System.out.println("Controller: Found " + transactions.size() + " transactions");
+        return ResponseEntity.ok(transactions);
+    }
 
     @GetMapping("/getAllTransactions")
     public ResponseEntity<?> getAllTranscations() {

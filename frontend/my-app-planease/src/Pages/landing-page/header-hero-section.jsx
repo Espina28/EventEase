@@ -74,8 +74,8 @@ export default function HeaderHeroSection() {
             transition={{ duration: 0.5, delay: 0.2 }}
             className="text-white text-sm md:text-base mb-8 max-w-2xl mx-auto"
           >
-            From Weddings, birthday, or any services, PlanEase connects you with top event professionals. Choose
-            services, book easily, and customize your event with trusted contractors.
+            From weddings, birthdays, or any services, EventEase connects you with top event organizers. Easily
+            book, choose and customize your event with trusted contractors.
           </motion.p>
 
           <motion.div
