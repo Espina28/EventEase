@@ -92,7 +92,6 @@ const HomePage = () => {
               key={service.id}
               image={service.image}
               title={service.title}
-              price={service.price}
               link={service.link}
             />
           ))}

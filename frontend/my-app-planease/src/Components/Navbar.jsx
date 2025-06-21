@@ -1,10 +1,10 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Bell, LogOut, User } from "lucide-react"
+import { Bell, LogOut, User, Calendar, CheckCircle, Clock, AlertCircle } from "lucide-react"
 import { ProfileModal } from "./profile-modal"
 import { useAuth } from "./AuthProvider"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, Link } from "react-router-dom"
 import axios from "axios"
 
 const API_BASE_URL = "http://localhost:8080"
@@ -14,8 +14,14 @@ export const PROFILE_UPDATED_EVENT = "profileUpdated"
 
 const Navbar = () => {
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false)
+  const [bookingsDropdownOpen, setBookingsDropdownOpen] = useState(false)
   const [profileModalOpen, setProfileModalOpen] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
+  const [bookings, setBookings] = useState({
+    pending: [],
+    ongoing: [],
+    completed: []
+  })
   const [user, setUser] = useState({
     firstname: "",
     lastname: "",
@@ -23,6 +29,7 @@ const Navbar = () => {
     profilePicture: null,
   })
   const [loading, setLoading] = useState(true)
+  const [bookingsLoading, setBookingsLoading] = useState(true)
   const { logout } = useAuth()
   const navigate = useNavigate()
 
@@ -85,6 +92,21 @@ const Navbar = () => {
     return () => clearInterval(intervalId)
   }, [user.userId])
 
+  // Separate effect for fetching bookings after user data is loaded
+  useEffect(() => {
+    if (user.email) {
+      console.log("DEBUG: User email is available, fetching bookings", user.email)
+      const token = localStorage.getItem("token")
+      if (token) {
+        fetchUserBookings(token)
+      } else {
+        console.error("DEBUG: No token available for bookings fetch")
+      }
+    } else {
+      console.log("DEBUG: User email not available yet")
+    }
+  }, [user.email])
+
   // Listen for profile update events
   useEffect(() => {
     // Create event listener for profile updates
@@ -135,6 +157,79 @@ const Navbar = () => {
     navigate("/notifications")
   }
 
+  const navigateToBookings = () => {
+    navigate("/my-bookings")
+  }
+
+  const fetchUserBookings = async (token) => {
+    setBookingsLoading(true)
+    try {
+      // Get user email from stored user data
+      const userEmail = user.email;
+      console.log("DEBUG: Fetching bookings for user email:", userEmail);
+      if (!userEmail) {
+        console.error("User email not found");
+        setBookingsLoading(false);
+        return;
+      }
+      
+      console.log(`DEBUG: Making API request to: ${API_BASE_URL}/api/transactions/getTransactionByEmail/${userEmail}`);
+      
+      // Use the correct API endpoint for fetching user transactions
+      const response = await axios.get(`${API_BASE_URL}/api/transactions/getTransactionByEmail/${userEmail}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      
+      // Log the response for debugging
+      console.log("DEBUG: API response received:", response);
+      console.log("DEBUG: Response data:", response.data);
+      
+      // Categorize bookings by status
+      const transactions = response.data || [];
+      console.log("DEBUG: Number of transactions:", transactions.length);
+      
+      // Log each transaction to check their structure
+      transactions.forEach((transaction, index) => {
+        console.log(`DEBUG: Transaction ${index}:`, transaction);
+        console.log(`DEBUG: Transaction ${index} status:`, transaction.status);
+      });
+      
+      // Try both casing variations for status field
+      const pendingBookings = transactions.filter(transaction => 
+        (transaction.status?.toUpperCase() === "PENDING" || 
+         transaction.status?.toUpperCase() === "PENDING_PAYMENT" || 
+         transaction.Status?.toUpperCase() === "PENDING" || 
+         transaction.Status?.toUpperCase() === "PENDING_PAYMENT"));
+      
+      const ongoingBookings = transactions.filter(transaction => 
+        (transaction.status?.toUpperCase() === "CONFIRMED" || 
+         transaction.status?.toUpperCase() === "IN_PROGRESS" || 
+         transaction.status?.toUpperCase() === "PROCESSING" ||
+         transaction.Status?.toUpperCase() === "CONFIRMED" || 
+         transaction.Status?.toUpperCase() === "IN_PROGRESS" || 
+         transaction.Status?.toUpperCase() === "PROCESSING"));
+         
+      const completedBookings = transactions.filter(transaction => 
+        (transaction.status?.toUpperCase() === "COMPLETED" ||
+         transaction.Status?.toUpperCase() === "COMPLETED"));
+      
+      console.log("DEBUG: Pending bookings:", pendingBookings.length);
+      console.log("DEBUG: Ongoing bookings:", ongoingBookings.length);
+      console.log("DEBUG: Completed bookings:", completedBookings.length);
+      
+      setBookings({
+        pending: pendingBookings,
+        ongoing: ongoingBookings,
+        completed: completedBookings
+      })
+      setBookingsLoading(false)
+    } catch (error) {
+      console.error("Failed to fetch bookings:", error)
+      console.error("Error details:", error.response?.data || error.message);
+      setBookingsLoading(false)
+    }
+  }
+
   return (
     <>
       {/* Navbar */}
@@ -152,12 +247,18 @@ const Navbar = () => {
         <div className="my-container text-center mx-5 px-6 py-3">
           <div className="my-div-1 flex justify-between">
             {/* Logo - now positioned on the left */}
-            <a href="/" className="text-xl font-medium">
+            <Link to="/home" className="text-xl font-medium">
               Event<span className="text-amber-500">Ease</span>
-            </a>
+            </Link>
 
-            {/* Right side - notifications and profile */}
+            {/* Right side - bookings, notifications and profile */}
             <div className="flex items-center space-x-4">
+              {/* Bookings link */}
+              <button onClick={navigateToBookings} className="text-gray-600 hover:text-blue-500 relative">
+                <Calendar size={20} />
+              </button>
+              
+              {/* Notifications */}
               <button onClick={handleNotificationClick} className="text-gray-600 hover:text-blue-500 relative">
                 <Bell size={20} />
                 {unreadCount > 0 && (

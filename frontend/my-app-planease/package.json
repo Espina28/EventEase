@@ -14,7 +14,7 @@
     "@emotion/styled": "^11.14.0",
     "@greatsumini/react-facebook-login": "^3.4.0",
     "@headlessui/react": "^2.2.4",
-    "@heroicons/react": "^2.2.0",
+    "@heroicons/react": "^2.0.18",
     "@imagekit/react": "^5.0.1",
     "@mui/icons-material": "^7.0.2",
     "@mui/material": "^7.1.0",

@@ -33,6 +33,10 @@ public interface TransactionRepo extends JpaRepository<TransactionsEntity, Integ
     @org.springframework.data.jpa.repository.Query("SELECT t FROM TransactionsEntity t WHERE t.user.userId = :userId")
     List<TransactionsEntity> findByUserId(int userId);
 
+
+//new query for user transactions - Ivan
+    @Query("SELECT t FROM TransactionsEntity t WHERE t.user.email = :email")
+    List<TransactionsEntity> findByUserEmail(@Param("email") String email);
     
     @Query("SELECT t FROM TransactionsEntity t JOIN t.eventServices es WHERE es.subcontractor.user.email = :email")
     List<TransactionsEntity> getAllTransactionsByEventService(@Param("email") String email);
