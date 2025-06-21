@@ -72,7 +72,7 @@ public class UnavailableDatesController {
             }
             
             unavailableDatesService.deleteUnavailableDate(Integer.parseInt(id));
-            return ResponseEntity.noContent().build();
+            return ResponseEntity.ok().build();
         } catch (Exception e) {
             Map<String, String> errorResponse = new HashMap<>();
             errorResponse.put("error", e.getMessage());

@@ -76,8 +76,8 @@ public class ShowcaseController {
 
             if (showcaseDTO.getDeletedFileIds() != null) {
                 showcaseMediaService.deleteMediaByIds(showcaseDTO.getDeletedFileIds());
+                showcaseMediaService.createShowcaseMedia(showcaseDTO.getImageUrls(), updatedShowcase);
             }
-            showcaseMediaService.createShowcaseMedia(showcaseDTO.getImageUrls(), updatedShowcase);
 
             return ResponseEntity.ok().body(updatedShowcase);
         } catch (Exception e) {
