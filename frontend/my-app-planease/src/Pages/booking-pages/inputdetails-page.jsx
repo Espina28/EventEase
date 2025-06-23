@@ -13,6 +13,7 @@ import {
   getActiveTab,
   getSelectedServices,
   getSelectedPackage,
+  saveServicesData,
   PACKAGES,
 } from "../booking-pages/utils/booking-storage"
 
@@ -29,7 +30,7 @@ const InputDetailsPage = () => {
   const [isLoadingUserData, setIsLoadingUserData] = useState(true)
 
   const [activeTab, setActiveTab] = useState(getActiveTab)
-  const [selectedServices, setSelectedServices] = useState(getSelectedServices)
+  const [selectedServices, setSelectedServices] = useState(saveServicesData)
 
 
   // Store current event name in sessionStorage
@@ -48,47 +49,111 @@ const InputDetailsPage = () => {
   useEffect(() => {
     const fetchAndAutoFillUserData = async () => {
       try {
-        const token = localStorage.getItem("token")
+        const token = localStorage.getItem("token");
         if (!token) {
-          setIsLoadingUserData(false)
-          return
+          setIsLoadingUserData(false);
+          return;
         }
-
-        // Fetch user data directly from endpoint
+  
         const response = await axios.get("http://localhost:8080/user/getuser", {
           headers: { Authorization: `Bearer ${token}` },
-        })
-
-        const userData = response.data
-
-        // Check if form is currently empty (should auto-fill)
-        const currentPersonalInfo = getPersonalInfo()
+        });
+  
+        const userData = response.data;
+  
+        const currentPersonalInfo = getPersonalInfo();
         const shouldAutoFill =
-          !currentPersonalInfo.firstName && !currentPersonalInfo.lastName && !currentPersonalInfo.email
-
+          !currentPersonalInfo.firstName && !currentPersonalInfo.lastName && !currentPersonalInfo.email;
+  
         if (shouldAutoFill && userData) {
-          // Auto-fill form with user data
           const autoFilledPersonalInfo = {
             firstName: userData.firstname || "",
             lastName: userData.lastname || "",
             email: userData.email || "",
             contact: userData.phoneNumber || "",
-          }
-
-          setPersonalInfo(autoFilledPersonalInfo)
-          // Save to sessionStorage
-          savePersonalInfo(autoFilledPersonalInfo)
+          };
+  
+          setPersonalInfo(autoFilledPersonalInfo);
+          savePersonalInfo(autoFilledPersonalInfo);
+  
+          // 🔁 Wait until email is available, then call loadFormProgress
+          await loadFormProgress(autoFilledPersonalInfo.email);
+        } else {
+          await loadFormProgress(currentPersonalInfo.email);
         }
       } catch (error) {
-        console.error("Error fetching user data:", error)
-        // If there's an error, just continue with empty form
+        console.error("Error fetching user data:", error);
       } finally {
-        setIsLoadingUserData(false)
+        setIsLoadingUserData(false);
       }
+    };
+  
+    fetchAndAutoFillUserData();
+  }, []);
+  
+
+  const loadFormProgress = async (email) => {
+    const token = localStorage.getItem("token");
+  
+    try {
+      const response = await axios.get(`http://localhost:8080/form-draft/load`, {
+        headers: { Authorization: `Bearer ${token}` },
+        params: {
+          email: email,
+          eventName: currentEventName
+        }
+      });
+  
+      const { personalInfo, eventDetails, selectedServices } = response.data;
+      console.log(response.data)
+      if (personalInfo) setPersonalInfo(personalInfo);
+      if (eventDetails) setEventDetails(eventDetails);
+      if (selectedServices) {
+        let parsed = selectedServices;
+      
+        // If it's a string, parse it
+        if (typeof selectedServices === "string") {
+          try {
+            parsed = JSON.parse(selectedServices);
+          } catch (e) {
+            console.error("Failed to parse selectedServices:", e);
+          }
+        }
+      setSelectedServices(parsed);
+      saveServicesData({ selectedServices: parsed });
+      }
+      
+    } catch (error) {
+      console.error("Error fetching form progress:", error);
+    }
+  };
+  
+  
+  
+  const submitFormProgress = () => {
+    const token = localStorage.getItem("token")
+
+    const body ={
+      email: personalInfo.email,
+      eventName: currentEventName,
+      jsonData: JSON.stringify({
+        personalInfo,
+        eventDetails,
+        selectedServices
+      })
     }
 
-    fetchAndAutoFillUserData()
-  }, [])
+    console.log(body)
+    axios.post(`http://localhost:8080/form-draft/save`, body, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    .then((response) => {
+      console.log(response.data)
+    })
+    .catch((error) => {
+      console.error("Error fetching form progress:", error)
+    })
+  }
 
   // Handle personal info changes
   const handlePersonalInfoChange = (e) => {
@@ -136,6 +201,7 @@ const InputDetailsPage = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault()
+    submitFormProgress()
 
     if (!isFormValid()) {
       alert("Please fill in all required fields.")

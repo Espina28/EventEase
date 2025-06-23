@@ -17,6 +17,8 @@ const PaymentProofPage = () => {
 
   // Get event name from params or sessionStorage as fallback
   const currentEventName = eventName || sessionStorage.getItem("currentEventName") || "Event"
+  const storedInfo = sessionStorage.getItem("bookingPersonalInfo");
+  const currentEmail = storedInfo ? JSON.parse(storedInfo).email : null;
 
   const [uploadedFile, setUploadedFile] = useState(null)
   const [previewUrl, setPreviewUrl] = useState(null)
@@ -202,6 +204,18 @@ const PaymentProofPage = () => {
     return true
   }
 
+  const handleDeleteFormDraft =  async () => {
+    const token = localStorage.getItem("token")
+    try {
+      const response = await axios.delete(`http://localhost:8080/form-draft/delete/${currentEmail}/${currentEventName}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+    } catch (error) {
+      console.error("Error fetching form progress:", error);
+    }
+
+  }
+
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -333,6 +347,7 @@ const PaymentProofPage = () => {
             headers: { Authorization: `Bearer ${token}` },
           }
         )
+        handleDeleteFormDraft()
 
         // Show success message and redirect
         setTimeout(() => {

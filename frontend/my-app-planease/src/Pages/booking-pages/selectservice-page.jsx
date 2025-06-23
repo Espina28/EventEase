@@ -12,6 +12,7 @@ import {
   getSelectedServices,
   getSelectedPackage,
   getEventDetails,
+  getPersonalInfo,
   saveServicesData,
   saveAvailableServices,
   PACKAGES,
@@ -33,6 +34,9 @@ const SelectServicePage = () => {
   const [selectedPackage, setSelectedPackage] = useState(getSelectedPackage)
 
   const [showcaseData, setShowcaseData] = useState({ visible: false, id: null, title: "" });
+
+  const [personalInfo, setPersonalInfo] = useState(getPersonalInfo)
+  const [eventDetails, setEventDetails] = useState(getEventDetails)
 
   // New state for subcontractor services
   const [subcontractorServices, setSubcontractorServices] = useState([])
@@ -101,6 +105,29 @@ const SelectServicePage = () => {
 
     fetchSubcontractorServices()
   }, [])
+  
+  
+  const submitFormProgress = async () => {
+    const token = localStorage.getItem("token");
+    const body = {
+      email: personalInfo.email,
+      eventName: currentEventName,
+      jsonData: JSON.stringify({
+        personalInfo,
+        eventDetails,
+        selectedServices
+      })
+    };
+
+    try {
+      await axios.post(`http://localhost:8080/form-draft/save`, body, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    } catch (error) {
+      console.error("Error fetching form progress:", error);
+      throw error; // rethrow so beforeNavigate can block navigation
+    }
+  };
 
   // Helper function to get appropriate icon based on service name
   const getServiceIcon = (serviceName) => {
@@ -190,6 +217,8 @@ const SelectServicePage = () => {
       availableServices: subcontractorServices,
     })
 
+    submitFormProgress()
+
     // Navigate to preview page with event name
     if (eventName) {
       navigate(`/book/${encodeURIComponent(eventName)}/preview`)
@@ -201,6 +230,7 @@ const SelectServicePage = () => {
   // Handle previous button click
   const handlePrevious = () => {
     if (eventName) {
+      submitFormProgress()
       navigate(`/book/${encodeURIComponent(eventName)}/inputdetails`)
     } else {
       navigate("/book/inputdetails")
@@ -234,7 +264,20 @@ const SelectServicePage = () => {
 
         <div className="booking-content">
           {/* Side Panel */}
-          <BookingSidePanel activeStep="services" />
+          {/* <BookingSidePanel activeStep="services" /> */}
+          <BookingSidePanel
+            activeStep="enter-details"
+            beforeNavigate={ async () => {
+              try {
+                // Submit progress
+                await submitFormProgress(); // 👈 make sure it's `await` if it returns a Promise
+                return true; // allow navigation
+              } catch (error) {
+                console.error("Blocking navigation due to error:", error);
+                return false; // block navigation
+              }
+            }}
+          />
 
           {/* Main Content */}
           <div className="main-form-content">
