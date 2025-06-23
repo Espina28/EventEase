@@ -40,9 +40,6 @@ public class EmailController {
                             "<p style=\"color: #374151; margin-top: 1rem;\">" +
                             "Hello," +
                             "</p>" +
-                            "<p style=\"color: #374151;\">" +
-                            "You requested to reset your password. Please use the following OTP to continue:" +
-                            "</p>" +
                             "<div style=\"text-align: center; margin: 1.5rem 0;\">" +
                             "<span style=\"font-size: 1.875rem; font-weight: 700; color: #1f2937; background-color: #f3f4f6; padding: 0.75rem 1.5rem; border-radius: 0.375rem; display: inline-block;\">" +
                             otp +
