@@ -44,7 +44,11 @@ export const getEventDetails = () => {
 // Services Data functions
 export const saveServicesData = (data) => {
   const existing = getServicesData()
-  const updated = { ...existing, ...data }
+  let updated = null;
+  if(existing)
+    updated = { ...existing, ...data }
+  else 
+    updated = {...data}
   sessionStorage.setItem(STORAGE_KEYS.SERVICES_DATA, JSON.stringify(updated))
 }
 

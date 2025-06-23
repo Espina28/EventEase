@@ -18,6 +18,8 @@ const PaymentProofPagePackage = () => {
 
   // Get package name from params or sessionStorage as fallback
   const currentPackageName = packageName || sessionStorage.getItem("currentPackageName") || "Package"
+  const storedInfo = sessionStorage.getItem("bookingPersonalInfo");
+  const currentEmail = storedInfo ? JSON.parse(storedInfo).email : null;
 
   const [uploadedFile, setUploadedFile] = useState(null)
   const [previewUrl, setPreviewUrl] = useState(null)
@@ -210,6 +212,18 @@ const PaymentProofPagePackage = () => {
     return true
   }
 
+  const handleDeleteFormDraft =  async () => {
+    const token = localStorage.getItem("token")
+    try {
+      const response = await axios.delete(`http://localhost:8080/form-draft/delete/${currentEmail}/${currentPackageName}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+    } catch (error) {
+      console.error("Error fetching form progress:", error);
+    }
+
+  }
+
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -351,16 +365,7 @@ const PaymentProofPagePackage = () => {
           }
         );
 
-        // Send notification to subcontractors related to the package
-        await axios.post(
-          "http://localhost:8080/api/notifications/notify-subcontractors",
-          null,
-          {
-            params: { packageId: packageId, message: `New package booking submitted: ${currentPackageName}` },
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-
+        handleDeleteFormDraft()
         // Show success message and redirect
         setTimeout(() => {
           showModal("Your package booking was submitted successfully! Our team will contact you to finalize the details.", true);
@@ -579,7 +584,7 @@ const PaymentProofPagePackage = () => {
           setModalOpen(false);
           if (pendingNavigation) {
             setPendingNavigation(false);
-            navigate("/user-reservations");
+            navigate("/home")
           }
         }}
         message={modalMessage}

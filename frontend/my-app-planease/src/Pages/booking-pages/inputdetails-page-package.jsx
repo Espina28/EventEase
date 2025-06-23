@@ -79,6 +79,7 @@ const InputDetailsPagePackage = () => {
           console.log("Package ID value:", livePackageData.packageId)
 
           setPackageData(livePackageData)
+          
 
           // Save to booking storage
           saveServicesData({
@@ -145,47 +146,93 @@ const InputDetailsPagePackage = () => {
   useEffect(() => {
     const fetchAndAutoFillUserData = async () => {
       try {
-        const token = localStorage.getItem("token")
+        const token = localStorage.getItem("token");
         if (!token) {
-          setIsLoadingUserData(false)
-          return
+          setIsLoadingUserData(false);
+          return;
         }
-
-        // Fetch user data directly from endpoint
+  
         const response = await axios.get("http://localhost:8080/user/getuser", {
           headers: { Authorization: `Bearer ${token}` },
-        })
-
-        const userData = response.data
-
-        // Check if form is currently empty (should auto-fill)
-        const currentPersonalInfo = getPersonalInfo()
+        });
+  
+        const userData = response.data;
+  
+        const currentPersonalInfo = getPersonalInfo();
         const shouldAutoFill =
-          !currentPersonalInfo.firstName && !currentPersonalInfo.lastName && !currentPersonalInfo.email
-
+          !currentPersonalInfo.firstName && !currentPersonalInfo.lastName && !currentPersonalInfo.email;
+  
         if (shouldAutoFill && userData) {
-          // Auto-fill form with user data
           const autoFilledPersonalInfo = {
             firstName: userData.firstname || "",
             lastName: userData.lastname || "",
             email: userData.email || "",
             contact: userData.phoneNumber || "",
-          }
-
-          setPersonalInfo(autoFilledPersonalInfo)
-          // Save to sessionStorage
-          savePersonalInfo(autoFilledPersonalInfo)
+          };
+  
+          setPersonalInfo(autoFilledPersonalInfo);
+          savePersonalInfo(autoFilledPersonalInfo);
+  
+          // 🔁 Wait until email is available, then call loadFormProgress
+          await loadFormProgress(autoFilledPersonalInfo.email);
+        } else {
+          await loadFormProgress(currentPersonalInfo.email);
         }
       } catch (error) {
-        console.error("Error fetching user data:", error)
-        // If there's an error, just continue with empty form
+        console.error("Error fetching user data:", error);
       } finally {
-        setIsLoadingUserData(false)
+        setIsLoadingUserData(false);
       }
-    }
+    };
 
     fetchAndAutoFillUserData()
   }, [])
+
+  const loadFormProgress = async (email) => {
+    const token = localStorage.getItem("token");
+  
+    try {
+      const response = await axios.get(`http://localhost:8080/form-draft/load`, {
+        headers: { Authorization: `Bearer ${token}` },
+        params: {
+          email: email,
+          eventName: currentPackageName
+        }
+      });
+  
+      const { personalInfo, eventDetails } = response.data;
+      console.log(response.data)
+      if (personalInfo) setPersonalInfo(personalInfo);
+      if (eventDetails) setEventDetails(eventDetails);
+      
+    } catch (error) {
+      console.error("Error fetching form progress:", error);
+    }
+  };
+
+  const submitFormProgress = () => {
+    const token = localStorage.getItem("token")
+
+    const body ={
+      email: personalInfo.email,
+      eventName: currentPackageName,
+      jsonData: JSON.stringify({
+        personalInfo,
+        eventDetails,
+      })
+    }
+
+    console.log(body)
+    axios.post(`http://localhost:8080/form-draft/save`, body, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    .then((response) => {
+      console.log(response.data)
+    })
+    .catch((error) => {
+      console.error("Error fetching form progress:", error)
+    })
+  }
 
   // Handle personal info changes
   const handlePersonalInfoChange = (e) => {
@@ -233,6 +280,7 @@ const InputDetailsPagePackage = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault()
+    submitFormProgress()
 
     if (!isFormValid()) {
       alert("Please fill in all required fields.")
