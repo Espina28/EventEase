@@ -85,9 +85,9 @@ const PreviewBookingPage = () => {
             selectedServicesList.push({
               id: serviceId,
               name: service.name,
+              category: service.category,
               price: service.price,
-              icon: service.icon,
-              provider: service.subcontractorName,
+              icon: service.icon
             })
           }
         }
@@ -232,8 +232,7 @@ const PreviewBookingPage = () => {
                             <div key={service.id} className="preview-service">
                               <div className="service-icon">{service.icon}</div>
                               <div className="service-info">
-                                <div className="service-name">{service.name}</div>
-                                {service.provider && <div className="service-provider">by {service.provider}</div>}
+                                <div className="service-name">{service.category}</div>
                               </div>
                               <div className="service-price">{formatAsPeso(service.price)}</div>
                             </div>

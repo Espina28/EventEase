@@ -72,7 +72,6 @@ function App() {
             <ProtectedRoute>
               <Navbar />
               <UserBookingsPage />
-              <Footer />
             </ProtectedRoute>
           } />
 
