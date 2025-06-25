@@ -249,14 +249,18 @@ const Navbar = () => {
         <div className="my-container text-center mx-5 px-6 py-3">
           <div className="my-div-1 flex justify-between">
             {/* Logo - now positioned on the left */}
-            <Link to={user.role === "Admin" ? "/admin/pendings" : "/home"} className="text-xl font-medium">
+            <Link to={
+              user.role === "Admin" ? "/admin/pendings" : 
+              user.role === "SubContractor" ? "/subcontractor/dashboard" : 
+              "/home"
+            } className="text-xl font-medium">
               Event<span className="text-amber-500">Ease</span>
             </Link>
 
             {/* Right side - bookings, notifications and profile */}
             <div className="flex items-center space-x-4">
-              {/* Bookings link - only show for non-admin users */}
-              {user.role !== "Admin" && (
+              {/* Bookings link - only show for regular users (not admin or subcontractor) */}
+              {user.role !== "Admin" && user.role !== "SubContractor" && (
                 <button onClick={navigateToBookings} className="text-gray-600 hover:text-blue-500 relative">
                   <Calendar size={20} />
                 </button>
