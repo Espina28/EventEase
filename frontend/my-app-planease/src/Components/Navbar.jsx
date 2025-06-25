@@ -27,6 +27,7 @@ const Navbar = () => {
     lastname: "",
     email: "",
     profilePicture: null,
+    role: ""
   })
   const [loading, setLoading] = useState(true)
   const [bookingsLoading, setBookingsLoading] = useState(true)
@@ -51,6 +52,7 @@ const Navbar = () => {
         lastname: data.lastname || "",
         email: data.email || "",
         profilePicture: data.profilePicture || null,
+        role: data.role || ""
       })
 
       // Fetch unread notification count after getting user data
@@ -247,16 +249,18 @@ const Navbar = () => {
         <div className="my-container text-center mx-5 px-6 py-3">
           <div className="my-div-1 flex justify-between">
             {/* Logo - now positioned on the left */}
-            <Link to="/home" className="text-xl font-medium">
+            <Link to={user.role === "Admin" ? "/admin/pendings" : "/home"} className="text-xl font-medium">
               Event<span className="text-amber-500">Ease</span>
             </Link>
 
             {/* Right side - bookings, notifications and profile */}
             <div className="flex items-center space-x-4">
-              {/* Bookings link */}
-              <button onClick={navigateToBookings} className="text-gray-600 hover:text-blue-500 relative">
-                <Calendar size={20} />
-              </button>
+              {/* Bookings link - only show for non-admin users */}
+              {user.role !== "Admin" && (
+                <button onClick={navigateToBookings} className="text-gray-600 hover:text-blue-500 relative">
+                  <Calendar size={20} />
+                </button>
+              )}
               
               {/* Notifications */}
               <button onClick={handleNotificationClick} className="text-gray-600 hover:text-blue-500 relative">

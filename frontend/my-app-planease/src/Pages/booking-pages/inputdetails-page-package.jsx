@@ -370,14 +370,7 @@ const InputDetailsPagePackage = () => {
               </div>
             </div>
 
-            {/* Package Info Display */}
-            {packageData && (
-              <div className="package-info-display">
-                <h3>Selected Package: {packageData.packageName}</h3>
-                <p>Price: ₱{packageData.packagePrice?.toLocaleString()}</p>
-                <p>Package ID: {packageData.packageId}</p>
-              </div>
-            )}
+      
 
             {/* Form */}
             <form onSubmit={handleSubmit}>
@@ -458,7 +451,7 @@ const InputDetailsPagePackage = () => {
                       type="text"
                       id="eventType"
                       name="eventType"
-                      value={currentPackageName}
+                      value="Wedding"
                       readOnly
                       className="readonly-input"
                     />

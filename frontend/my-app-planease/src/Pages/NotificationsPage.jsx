@@ -45,7 +45,7 @@ const NotificationsPage = () => {
       const response = await axios.get(`${API_BASE_URL}${endpoint}?userEmail=${userEmail}`, {
         headers: { Authorization: `Bearer ${token}` },
       })
-
+      console.log("Notifications:",  response.data)
       setNotifications(response.data)
     } catch (error) {
       console.error("Failed to fetch notifications:", error)
@@ -247,12 +247,12 @@ const NotificationsPage = () => {
                   >
                     Booking Rejections
                   </button>
-                  <button
+                  {/* <button
                     className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
                     onClick={() => applyFilter("welcome")}
                   >
                     System
-                  </button>
+                  </button> */}
                 </div>
               )}
             </div>
