@@ -3,6 +3,7 @@ package com.Project.Backend.Service;
 import java.sql.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import com.Project.Backend.DTO.GetSubcontractor;
@@ -46,9 +47,20 @@ public class SubcontractorService {
                         subcontractor.getShowcase()
                 ))
                 .toList();
-
     }
 
+    /**
+     * Get counts of subcontractors by service category
+     * @return List of maps containing category name and count
+     */
+    public List<Map<String, Object>> getSubcontractorCountsByCategory() {
+        return subContractorRepository.countByServiceCategory();
+    }
+
+    public List<SubcontractorEntity> getSubcontractorByPackageName(String packageName) {
+        return subContractorRepository.getSubcontractorsByPackageName(packageName);
+    }
+    
     public SubcontractorEntity getSubcontractorById(int id) {
         Optional<SubcontractorEntity> result = subContractorRepository.findById(id);
         return result.orElse(null);
@@ -58,8 +70,28 @@ public class SubcontractorService {
         return subContractorRepository.findByEmail(email);
     }
 
+
+
+    @Autowired
+    private UserService userService;
+
     public void deleteSubcontractor(int id) {
-        subContractorRepository.deleteById(id);
+        // First get the subcontractor to access its associated user
+        SubcontractorEntity subcontractor = subContractorRepository.findById(id).orElse(null);
+        
+        if (subcontractor != null && subcontractor.getUser() != null) {
+            // Get the user ID before deleting the subcontractor
+            int userId = subcontractor.getUser().getUserId();
+            
+            // Delete the subcontractor first
+            subContractorRepository.deleteById(id);
+            
+            // Then delete the associated user
+            userService.deleteUser(userId);
+        } else {
+            // Just delete the subcontractor if no user is associated
+            subContractorRepository.deleteById(id);
+        }
     }
 
     public String editDescription(String email, String description) throws SdkClientException {

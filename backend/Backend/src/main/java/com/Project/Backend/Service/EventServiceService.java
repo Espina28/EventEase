@@ -6,9 +6,13 @@ import com.Project.Backend.Entity.TransactionsEntity;
 import com.Project.Backend.Repository.EventServiceRepository;
 import com.Project.Backend.Repository.SubContractorRepository;
 import com.Project.Backend.Repository.TransactionRepo;
-
+import com.Project.Backend.DTO.GetTransactionDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.Collectors;
+
 
 import java.sql.Date;
 import java.util.ArrayList;
@@ -53,6 +57,8 @@ public class EventServiceService {
         TransactionsEntity transaction = transactionRepository.findById(transactionId)
             .orElseThrow(() -> new RuntimeException("Transaction not found with ID: " + transactionId));
         return transaction.getEventServices();
+
+        
     }
 
     // Get all unassigned event services

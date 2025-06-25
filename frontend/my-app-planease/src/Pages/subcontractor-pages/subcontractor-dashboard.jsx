@@ -57,7 +57,8 @@ const SubcontractorDashboard = () => {
     const [userdetails, setUserDetails] = useState({
         fullname: '',
         email: '',
-        service_name: ''
+        service_name: '',
+        profile_image: ''
     });
     const [imageUrl, setImageUrl] = useState([]);
 
@@ -156,14 +157,16 @@ const SubcontractorDashboard = () => {
             .then((response) => {
                 console.log("response", response);
 
-                const user = response.data.userId;
+                const user = response.data.user;
 
                 setShowcase(response.data.showcase);
                 setAbout(response.data.subcontractor_description);
+                console.log(user)
                 setUserDetails({
                     fullname: `${user.firstname} ${user.lastname}`,
                     email: user.email,
-                    service_name: response.data.subcontractor_serviceName
+                    service_name: response.data.subcontractor_serviceName,
+                    profile_image: user.profilePicture
                 });
             })
             .catch((error) => {
@@ -561,7 +564,7 @@ const SubcontractorDashboard = () => {
                 <div className="flex flex-col direct rounded-lg gap-4 bg-gray-100 md:px-10 md:py-10">
                     <div className="flex items-center bg-white p-5 md:p-10 shadow-lg">
                         <img
-                            src=""
+                            src={userdetails.profile_image}
                             alt="Profile"
                             className="w-20 h-20 rounded-full object-cover"
                         />
@@ -986,7 +989,7 @@ const SubcontractorDashboard = () => {
 
                         {/* Buttons */}
                         <Box className="flex justify-end gap-3">
-                            <Button
+                            {/* <Button
                                 variant="contained"
                                 component="label"
                                 disabled={isUploading || selectedImage.length !== 0}
@@ -1001,14 +1004,14 @@ const SubcontractorDashboard = () => {
                             </Button>
                             <Typography variant="caption" color="textSecondary" sx={{ mt: 0.5 }}>
                                 (Maximum allowed video size: 500MB)
-                            </Typography>
-                            <Button
+                            </Typography> */}
+                            {/* <Button
                                 variant="outlined"
                                 onClick={() => setEditMediaOpen(true)}
                                 disabled={isUploading || selectedImage.length === 0}
                             >
                                 Edit All
-                            </Button>
+                            </Button> */}
                             <Button
                                 variant="contained"
                                 onClick={handleSubmit}

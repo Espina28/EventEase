@@ -26,12 +26,13 @@ const NotificationsPage = () => {
         return
       }
 
-      // Get user ID from the token or from a user context
+      // Get user info from the token or from a user context
       const userResponse = await axios.get(`${API_BASE_URL}/user/getuser`, {
         headers: { Authorization: `Bearer ${token}` },
       })
 
-      const userId = userResponse.data.userId
+      const userEmail = userResponse.data.email
+      const userRole = userResponse.data.role
 
       // Fetch notifications based on filter
       let endpoint = `/api/notifications`
@@ -41,7 +42,7 @@ const NotificationsPage = () => {
         endpoint = `/api/notifications/type/${filterType}`
       }
 
-      const response = await axios.get(`${API_BASE_URL}${endpoint}?userId=${userId}`, {
+      const response = await axios.get(`${API_BASE_URL}${endpoint}?userEmail=${userEmail}`, {
         headers: { Authorization: `Bearer ${token}` },
       })
 
@@ -88,10 +89,10 @@ const NotificationsPage = () => {
         headers: { Authorization: `Bearer ${token}` },
       })
 
-      const userId = userResponse.data.userId
+      const userEmail = userResponse.data.email
 
       await axios.put(
-        `${API_BASE_URL}/api/notifications/read-all?userId=${userId}`,
+        `${API_BASE_URL}/api/notifications/read-all?userEmail=${userEmail}`,
         {},
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -158,7 +159,40 @@ const NotificationsPage = () => {
 
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-semibold">Notifications</h1>
+          <div className="flex items-center gap-2 text-gray-600 text-sm">
+            <button
+              onClick={async () => {
+                try {
+                  const token = localStorage.getItem("token")
+                  if (!token) {
+                    window.location.href = "/"
+                    return
+                  }
+                  const userResponse = await axios.get(`${API_BASE_URL}/user/getuser`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                  })
+                  const role = userResponse.data.role
+                  if (role === "User") {
+                    window.location.href = "/home"
+                  } else if (role === "SubContractor") {
+                    window.location.href = "/subcontractor/dashboard"
+                  } else if (role === "Admin") {
+                    window.location.href = "/admin/pendings"
+                  } else {
+                    window.location.href = "/"
+                  }
+                } catch (error) {
+                  console.error("Failed to get user role:", error)
+                  window.location.href = "/"
+                }
+              }}
+              className="hover:underline"
+            >
+              Home
+            </button>
+            <span>/</span>
+            <h1 className="text-2xl font-semibold">Notifications</h1>
+          </div>
 
           <div className="flex items-center space-x-2">
             <button onClick={markAllAsRead} className="px-3 py-1.5 text-sm text-blue-600 hover:text-blue-800">

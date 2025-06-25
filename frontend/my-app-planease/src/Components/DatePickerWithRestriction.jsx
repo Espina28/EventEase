@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import moment from 'moment';
 import './styles/DatePickerWithRestriction.css';
+import axios from 'axios';
 
 const DatePickerWithRestriction = ({ onChange, value, name }) => {
   const [selectedDate, setSelectedDate] = useState(value || '');
@@ -13,6 +14,7 @@ const DatePickerWithRestriction = ({ onChange, value, name }) => {
 
   // Calculate minimum date (3 weeks from now)
   useEffect(() => {
+    getTranscationDates()
     const minDateValue = moment().add(3, 'weeks').format('YYYY-MM-DD');
     setMinDate(minDateValue);
     
@@ -24,6 +26,26 @@ const DatePickerWithRestriction = ({ onChange, value, name }) => {
   useEffect(() => {
     generateDaysForMonth(currentMonth);
   }, [currentMonth]);
+
+  const [unavailableDates, setUnavailableDates] = useState(new Map());
+
+  const getTranscationDates = () => {
+    axios.get('http://localhost:8080/api/transactions/getAllActiveTransactions')
+      .then(res => {
+        // Count occurrences of each date in transactions
+        const dateCounts = new Map();
+        res.data.forEach(transaction => {
+          const date = moment(transaction.transactionDate).format('YYYY-MM-DD');
+          const currentCount = dateCounts.get(date) || 0;
+          dateCounts.set(date, currentCount + 1);
+        });
+        setUnavailableDates(dateCounts);
+      })
+      .catch(err => {
+        console.error('Error fetching transaction dates:', err);
+      });
+  }
+
 
   const generateDaysForMonth = (monthMoment) => {
     const year = monthMoment.year();
@@ -47,10 +69,16 @@ const DatePickerWithRestriction = ({ onChange, value, name }) => {
     // Add actual days of month
     for (let i = 1; i <= daysInMonthCount; i++) {
       const dayDate = moment([year, month, i]);
+      const formattedDate = dayDate.format('YYYY-MM-DD');
+      const transactionCount = unavailableDates.get(formattedDate) || 0;
+      const isFullyBooked = transactionCount > 1; // More than one transaction on this date
+      
       days.push({
         date: dayDate,
         day: i,
         isDisabled: dayDate.isBefore(moment().add(3, 'weeks')),
+        isFullyBooked,
+        transactionCount,
         isToday: dayDate.isSame(moment(), 'day')
       });
     }
@@ -84,7 +112,8 @@ const DatePickerWithRestriction = ({ onChange, value, name }) => {
     e.preventDefault(); // Prevent form submission
     e.stopPropagation(); // Stop event propagation
     
-    if (!day || day.isDisabled) return;
+    // Prevent selecting days that are disabled or fully booked
+    if (!day || day.isDisabled || day.isFullyBooked) return;
     
     const newDate = day.date.format('YYYY-MM-DD');
     setSelectedDate(newDate);
@@ -165,7 +194,8 @@ const DatePickerWithRestriction = ({ onChange, value, name }) => {
                 key={index} 
                 className={`calendar-day ${!day ? 'empty-day' : ''} ${
                   day && day.isDisabled ? 'disabled-day' : ''
-                } ${day && day.isToday ? 'today' : ''} ${
+                } ${day && day.isFullyBooked ? 'fully-booked-day' : ''} ${
+                  day && day.isToday ? 'today' : ''} ${
                   day && moment(selectedDate).isSame(day.date, 'day') ? 'selected-day' : ''
                 }`}
                 onClick={(e) => handleDayClick(e, day)}
@@ -176,6 +206,11 @@ const DatePickerWithRestriction = ({ onChange, value, name }) => {
                     Must book at least 3 weeks in advance
                   </span>
                 )}
+                {day && day.isFullyBooked && (
+                  <span className="tooltip-text">
+                    Fully Booked
+                  </span>
+                )}
               </div>
             ))}
           </div>
@@ -184,6 +219,10 @@ const DatePickerWithRestriction = ({ onChange, value, name }) => {
             <div className="date-info">
               <span className="info-dot disabled-dot"></span>
               <span>Not available (less than 3 weeks)</span>
+            </div>
+            <div className="date-info">
+              <span className="info-dot fully-booked-dot"></span>
+              <span>Fully booked</span>
             </div>
             <div className="date-info">
               <span className="info-dot today-dot"></span>

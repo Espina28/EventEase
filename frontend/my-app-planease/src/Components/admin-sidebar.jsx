@@ -49,7 +49,18 @@ const AdminSideBar = () => {
             <Calendar className="w-5 h-5" />
             Your Events
           </NavLink>
-                    <NavLink
+              <NavLink
+            to="/admin/packages"
+            className={
+              admin_page === "events"
+                ? "flex items-center gap-3 font-medium px-3 py-2 rounded-md"
+                : "flex items-center gap-3 px-3 py-2 rounded-md hover:bg-gray-100"
+            }
+          >
+            <Calendar className="w-5 h-5" />
+            Your Packages
+          </NavLink>
+            <NavLink
             to="/admin/subcontractors"
             className={
               admin_page === "events"

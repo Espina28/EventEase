@@ -10,6 +10,7 @@ const AdminBookings = () => {
     const [viewServicesModal, setViewServicesModal] = useState(false);
     const [viewPaymentModal, setViewPaymentModal] = useState(false);
     const [transactions, setTransactions] = useState([])
+    const [viewReasonModal, setViewReasonModal] = useState(false);
 
 
     useEffect(() => {
@@ -20,6 +21,7 @@ const AdminBookings = () => {
         axios.get('http://localhost:8080/api/transactions/getAllTransactions')
             .then((res) => {
                 setTransactions(res.data)
+                console.log(res.data);
             })
             .catch((err) => {
                 if (err.response) {
@@ -33,20 +35,24 @@ const AdminBookings = () => {
     }
 
     const ValidateTransaction = (validate) => {
-
-        axios.put(axios.put(`http://localhost:8080/api/transactions/validateTransaction?transactionId=${selectedRequest?.transaction_Id}&status=${validate}`)
-        )
+        axios.put(`http://localhost:8080/api/transactions/validateTransaction?transactionId=${selectedRequest?.transaction_Id}&status=${validate}`,{},
+            {
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
             .then((response) => {
                 console.log(response.data);
-                // Additional logic after successful validation
                 fetchData();
-                setSelectedRequest(null);
-                setViewServicesModal(false);
-                setViewPaymentModal(false);
             })
             .catch((error) => {
                 console.error(error.response?.data || error.message);
-                // Handle the error
+                // Optionally show an error message here
+            })
+            .finally(() => {
+                setSelectedRequest(null);
+                setViewServicesModal(false);
+                setViewPaymentModal(false);
             });
     }
 
@@ -76,7 +82,12 @@ const AdminBookings = () => {
                                 <tr key={req.transaction_Id} className="hover:bg-gray-100 cursor-pointer" onClick={() => setSelectedRequest(req)}>
                                     <td className="p-3 sm:p-4 whitespace-nowrap text-[#667085]">{req.userName}</td>
                                     <td className="p-3 sm:p-4 whitespace-nowrap text-[#667085]">{req.transactionDate.split(' - ')[0]}</td>
-                                    <td className="p-3 sm:p-4 whitespace-nowrap text-[#667085]">{req.eventName}</td>
+                                    {
+                                        req.eventName != null ? (
+                                                <td className="p-3 sm:p-4 whitespace-nowrap text-[#667085]">{req.eventName}</td>
+                                            ):
+                                            <td className="p-3 sm:p-4 whitespace-nowrap text-[#667085]">{"Wedding"}</td>
+                                    }
                                     <td className="p-3 sm:p-4 whitespace-nowrap text-[#667085]">
                                         <div className={`inline-block px-4 py-1 rounded-full font-semibold text-sm text-center
                                             ${req.transactionStatus === 'CANCELLED' ? 'bg-[#FFB8B2] text-[#912018]'
@@ -128,23 +139,37 @@ const AdminBookings = () => {
                                     <h4 className="font-semibold mt-6 mb-2 text-[#FFB22C]">Event Detail</h4>
                                     <div className="grid sm:grid-cols-1 md:grid-cols-2 gap-2 w-auto">
                                         <div className="flex flex-col gap-2 w-auto">
-                                            <div>
-                                                <label className="text-sm font-medium text-gray-500 block mb-1">Event Type</label>
-                                                <input type="text" className="border p-2 rounded w-full" value={selectedRequest.eventName} readOnly />
-                                            </div>
-                                            {
-                                                selectedRequest.packages!=null?(
-                                                        <div>
-                                                            <label className="text-sm font-medium text-gray-500 block mb-1">Package Type</label>
-                                                            <input type="text" className="border p-2 rounded w-full" value={selectedRequest.packageType} readOnly />
-                                                        </div>
-                                                    ):
-
+                                            {selectedRequest.packages != null ? (
+                                                <>
                                                     <div>
-                                                        <label className="text-sm font-medium text-gray-500 block mb-1">Package Type</label>
-                                                        <input type="text" className="border p-2 rounded w-full" value={"N/A"} readOnly />
+                                                        <label className="text-sm font-medium text-gray-500 block mb-1">Event
+                                                            Type</label>
+                                                        <input type="text" className="border p-2 rounded w-full"
+                                                               value={"Wedding"} readOnly/>
                                                     </div>
-                                            }
+                                                    <div>
+                                                        <label className="text-sm font-medium text-gray-500 block mb-1">Package
+                                                            Type</label>
+                                                        <input type="text" className="border p-2 rounded w-full"
+                                                               value={selectedRequest.packages} readOnly/>
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <div>
+                                                        <label className="text-sm font-medium text-gray-500 block mb-1">Event
+                                                            Type</label>
+                                                        <input type="text" className="border p-2 rounded w-full"
+                                                               value={selectedRequest.eventName} readOnly/>
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-sm font-medium text-gray-500 block mb-1">Package
+                                                            Type</label>
+                                                        <input type="text" className="border p-2 rounded w-full"
+                                                               value={"N/A"} readOnly/>
+                                                    </div>
+                                                </>
+                                            )}
                                         </div>
                                         <div className="flex flex-col gap-2 w-auto">
                                             <div>
@@ -167,19 +192,23 @@ const AdminBookings = () => {
                                         <div className="flex ml-auto gap-2">
                                             <button className="text-[#FFB22C] hover:underline" onClick={() => setViewPaymentModal(true)}>View Payment</button>
                                             <button className="text-[#FFB22C] hover:underline" onClick={() => setViewServicesModal(true)}>View Chosen Services</button>
+                                            {selectedRequest?.rejectedNote && (
+                                                <button className="text-[#FFB22C] hover:underline" onClick={() => setViewReasonModal(true)}>View Reason</button>
+                                            )}
                                         </div>
                                     </div>
                                     <div>
                                         <textarea readOnly className="w-full border p-3 rounded text-sm text-gray-600" value={selectedRequest.transactionNote}></textarea>
                                     </div>
                                 </div>
-
-                                <div className="flex flex-col sm:flex-row justify-end gap-4 pt-4">
-                                    <button className="bg-red-500 text-white px-4 py-2 rounded w-full sm:w-auto"
-                                            onClick={()=> ValidateTransaction("CANCELED")}>CANCEL</button>
-                                    <button className="bg-green-500 text-white px-4 py-2 rounded w-full sm:w-auto"
-                                            onClick={()=> ValidateTransaction("COMPLETED")}>COMPLETE</button>
-                                </div>
+                                {selectedRequest && !["CANCELLED", "COMPLETED", "DECLINED"].includes(selectedRequest.transactionStatus) && (
+                                    <div className="flex flex-col sm:flex-row justify-end gap-4 pt-4">
+                                        <button className="bg-red-500 text-white px-4 py-2 rounded w-full sm:w-auto"
+                                                onClick={()=> ValidateTransaction("CANCELLED")}>CANCEL</button>
+                                        <button className="bg-green-500 text-white px-4 py-2 rounded w-full sm:w-auto"
+                                                onClick={()=> ValidateTransaction("COMPLETED")}>COMPLETE</button>
+                                    </div>
+                                )}
                             </>
                         )}
                     </Dialog.Panel>
@@ -233,11 +262,43 @@ const AdminBookings = () => {
                         <div className="mt-6">
                             <h4 className="text-[#F79009] font-semibold mb-4">Payment Details</h4>
                             <div className="flex justify-center items-center bg-gray-100 p-4 rounded">
-                                <img src={selectedRequest?.paymentImage} alt="Payment Proof" className="max-h-[500px] rounded" />
+                                <img src={selectedRequest?.payment?.paymentReceipt} alt="Payment Proof" className="max-h-[500px] rounded" />
                             </div>
                         </div>
                         <div className="flex justify-end pt-6">
                             <button onClick={() => setViewPaymentModal(false)} className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded">Close</button>
+                        </div>
+                    </Dialog.Panel>
+                </div>
+            </Dialog>
+
+            <Dialog open={!!selectedRequest && viewReasonModal} onClose={() => setViewReasonModal(false)} className="fixed z-1150 shadow-md inset-0 overflow-y-auto hover:cursor-pointer">
+                <div className="flex items-center justify-center min-h-screen px-4">
+                    <Dialog.Panel className="bg-white w-full max-w-2xl rounded-lg shadow-lg p-4 sm:p-6">
+                        <div className="flex justify-between items-center border-b pb-2">
+                            <h3 className="text-xl font-semibold">Rejection Reason</h3>
+                            <button onClick={() => setViewReasonModal(false)} className="text-xl">×</button>
+                        </div>
+                        <div className="mt-6 space-y-4">
+                            <div>
+                                <h4 className="text-[#F79009] font-semibold mb-2">Reason</h4>
+                                <p className="text-gray-700 text-base">{selectedRequest?.rejectedNote?.rejectionNote}</p>
+                            </div>
+                            {selectedRequest?.rejectedNote?.imageUrl && (
+                                <div>
+                                    <h4 className="text-[#F79009] font-semibold mb-2">Image</h4>
+                                    <div className="flex justify-center items-center bg-gray-100 p-4 rounded">
+                                        <img src={selectedRequest.rejectedNote.imageUrl} alt="Rejection Proof" className="max-h-[300px] rounded" />
+                                    </div>
+                                </div>
+                            )}
+                            <div>
+                                <h4 className="text-[#F79009] font-semibold mb-2">Date</h4>
+                                <p className="text-gray-700 text-base">{selectedRequest?.rejectedNote?.rejectedDate}</p>
+                            </div>
+                        </div>
+                        <div className="flex justify-end pt-6">
+                            <button onClick={() => setViewReasonModal(false)} className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded">Close</button>
                         </div>
                     </Dialog.Panel>
                 </div>

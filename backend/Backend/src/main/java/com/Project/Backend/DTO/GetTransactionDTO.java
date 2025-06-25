@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
+import java.util.stream.Collectors;
 public class GetTransactionDTO {
     private int transaction_Id;
     private String userEmail;
@@ -23,10 +23,56 @@ public class GetTransactionDTO {
     private String packages;
     private PaymentEntity payment;
     private List<Map<String, Object>>subcontractors;
+    private RejectNoteDTO rejectedNote;
 
     public GetTransactionDTO() {
         this.subcontractors = new ArrayList<>();
         this.payment = new PaymentEntity();
+    }
+
+    public GetTransactionDTO(TransactionsEntity transaction) {
+        this.transaction_Id = transaction.getTransaction_Id();
+        this.userEmail = transaction.getUser().getEmail();
+        this.userName = transaction.getUser().getFirstname() + " " + transaction.getUser().getLastname();
+        this.phoneNumber = transaction.getUser().getPhoneNumber();
+        this.userAddress = transaction.getUser().getRegion() + ", " + transaction.getUser().getCityAndMul() + ", " + transaction.getUser().getBarangay();
+        this.eventName = transaction.getEvent().getEvent_name();
+        this.transactionVenue = transaction.getTransactionVenue();
+        this.transactionStatus = transaction.getTransactionStatus().toString();
+        this.transactionDate = transaction.getTransactionDate();
+        this.transactionNote = transaction.getTransactionNote();
+        
+        if(transaction.getPackages() != null) {
+            this.packages = transaction.getPackages().getPackageName();
+        }
+        
+        if(transaction.getPayment() != null) {
+            this.payment = transaction.getPayment();
+        }
+
+        this.subcontractors = transaction.getEventServices().stream()
+            .map(eventService -> {
+                Map<String, Object> subcontractorMap = new HashMap<>();
+                subcontractorMap.put("subcontractor_id", eventService.getSubcontractor().getSubcontractor_Id());
+                subcontractorMap.put("subcontractor_name", eventService.getSubcontractor().getUser().getFirstname() + " " + eventService.getSubcontractor().getUser().getLastname());
+                subcontractorMap.put("subcontractor_email", eventService.getSubcontractor().getUser().getEmail());
+                subcontractorMap.put("subcontractor_phone", eventService.getSubcontractor().getUser().getPhoneNumber());
+                subcontractorMap.put("subcontractor_address", eventService.getSubcontractor().getUser().getRegion() + ", " + eventService.getSubcontractor().getUser().getCityAndMul() + ", " + eventService.getSubcontractor().getUser().getBarangay());
+                subcontractorMap.put("subcontractor_service", eventService.getSubcontractor().getSubcontractor_serviceName());
+                subcontractorMap.put("subcontractor_service_category", eventService.getSubcontractor().getSubcontractor_serviceCategory());
+                subcontractorMap.put("subcontractor_service_description", eventService.getSubcontractor().getSubcontractor_description());
+                subcontractorMap.put("subcontractor_service_price", eventService.getSubcontractor().getSubcontractor_service_price());
+                return subcontractorMap;
+            })
+            .collect(Collectors.toList());
+    }
+
+    public RejectNoteDTO getRejectedNote() {
+        return rejectedNote;
+    }
+
+    public void setRejectedNote(RejectNoteDTO rejectedNote) {
+        this.rejectedNote = rejectedNote;
     }
 
     public String getTransactionNote() {

@@ -1,8 +1,6 @@
 package com.Project.Backend.Entity;
 
-import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
-import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import jakarta.persistence.*;
 import java.util.List;
 
@@ -21,25 +19,25 @@ public class SubcontractorEntity {
     private String subcontractor_serviceCategory;
     private double subcontractor_service_price;
 
-    @OneToOne
+    @OneToOne(cascade = CascadeType.REMOVE)
     @JoinColumn(name = "user_id")
     @JsonManagedReference("subcontractor-user")
     private UserEntity user;
 
     //here
-    @OneToMany(mappedBy = "subcontractor")
+    @OneToMany(mappedBy = "subcontractor", cascade = CascadeType.REMOVE)
     @JsonManagedReference("subcontactor-showcase")
     private List<ShowcaseEntity> showcase;
 
-    @OneToMany(mappedBy = "subcontractor", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "subcontractor", fetch = FetchType.LAZY, cascade = CascadeType.REMOVE)
     @JsonManagedReference(value = "subcontractor-unavailable-dates")
-    private List<UnavailableDates> unavailableDates;
+    private List<UnavailableDatesEntity> unavailableDates;
 
-    @OneToMany(mappedBy = "subcontractor")
+    @OneToMany(mappedBy = "subcontractor", cascade = CascadeType.REMOVE)
     @JsonManagedReference("subcontractor-eventservice")
     private List<EventServiceEntity> eventName;
 
-    @OneToMany(mappedBy = "subcontractor")
+    @OneToMany(mappedBy = "subcontractor", cascade = CascadeType.REMOVE)
     @JsonManagedReference("subcontractor-package-service")
     private List<PackageServicesEntity> packageServices;
 
@@ -67,13 +65,6 @@ public class SubcontractorEntity {
         this.subcontractor_serviceName = subcontractor_serviceName;
     }
 
-    public UserEntity getUserId() {
-        return user;
-    }
-
-    public void setUserId(UserEntity user) {
-        this.user = user;
-    }
 
     public List<ShowcaseEntity> getShowcase() {
         return showcase;
@@ -83,11 +74,11 @@ public class SubcontractorEntity {
         this.showcase = showcase;
     }
 
-    public List<UnavailableDates> getUnavailableDates() {
+    public List<UnavailableDatesEntity> getUnavailableDates() {
         return unavailableDates;
     }
 
-    public void setUnavailableDates(List<UnavailableDates> unavailableDates) {
+    public void setUnavailableDates(List<UnavailableDatesEntity> unavailableDates) {
         this.unavailableDates = unavailableDates;
     }
 

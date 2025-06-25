@@ -78,7 +78,7 @@ const ShowcaseModal = ({ title, subcontractorId, onClose }) => {
                                             className="w-20 h-20 sm:w-24 sm:h-24 rounded-full mx-auto mb-3 object-cover"
                                         />
                                     )}
-                                    <h3 className="font-semibold text-lg">{subcontractor.subcontractor_serviceName}</h3>
+                                    <h3 className="font-semibold text-lg">{subcontractor.subcontractor_serviceCategory}</h3>
                                 </div>
 
                                 {/* Showcase Section */}

@@ -1,5 +1,6 @@
 package com.Project.Backend.Service;
 
+import com.Project.Backend.DTO.PackageServiceAttachmentDTO;
 import com.Project.Backend.DTO.ServicePackageDTO;
 import com.Project.Backend.Entity.PackageServicesEntity;
 import com.Project.Backend.Entity.PackagesEntity;
@@ -9,12 +10,19 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class PackagesService {
 
     @Autowired
     private PackagesRepository packagesRepository;
+    @Autowired
+    private PackageServicesRepository packageServicesRepository;
+
+    @Autowired
+    private S3Service s3Service;
 
     public PackagesEntity create(PackagesEntity packages) {
         return packagesRepository.save(packages);
@@ -65,8 +73,37 @@ public class PackagesService {
         return packagesRepository.findServicePackagesByPackageName(packageName);
     }
 
-    public List<ServicePackageDTO> getAllPackages() {
-        return packagesRepository.findALlPackageServices();
+    public List<PackagesEntity> getAllPackages() {
+        return packagesRepository.findAll();
     }
 
+    public PackagesEntity updatePackageImage(int packageId, org.springframework.web.multipart.MultipartFile file) throws java.io.IOException {
+        PackagesEntity packages = packagesRepository.findById(packageId)
+            .orElseThrow(() -> new RuntimeException("Package not found with id: " + packageId));
+
+        if (file != null && !file.isEmpty()) {
+            // Delete the previous image from S3 (if it exists)
+            String existingImageUrl = packages.getPackageImage();
+            if (existingImageUrl != null && !existingImageUrl.isEmpty()) {
+                // TODO: Implement S3 delete if needed
+            }
+
+            // Convert MultipartFile to File
+            java.io.File convFile = java.io.File.createTempFile("upload", file.getOriginalFilename());
+            file.transferTo(convFile);
+
+            // Upload new image to S3
+            String newImageUrl = s3Service.upload(convFile, "package_images", file.getOriginalFilename());
+            packages.setPackageImage(newImageUrl);
+
+            // Delete temp file
+            convFile.delete();
+        }
+
+        return packagesRepository.save(packages);
+    }
+    
+    public List<PackageServiceAttachmentDTO> getServiceAttachmentsByPackageId(int packageId) {
+        return packagesRepository.findServiceAttachmentsByPackageId(packageId);
+    }
 }

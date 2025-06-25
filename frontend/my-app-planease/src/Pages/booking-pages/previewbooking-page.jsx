@@ -6,7 +6,7 @@ import "./styles/previewbooking-page.css"
 import Navbar from "../../Components/Navbar"
 import Footer from "../../Components/Footer"
 import BookingSidePanel from "../../Components/Booking-sidepanel"
-import { getCompleteBookingData, PACKAGES } from "./utils/booking-storage"
+import { getCompleteBookingData, PACKAGES, clearBookingData } from "./utils/booking-storage"
 
 const PreviewBookingPage = () => {
   const navigate = useNavigate()
@@ -123,7 +123,7 @@ const PreviewBookingPage = () => {
       <div className="booking-container">
         {/* Breadcrumb Navigation */}
         <div className="breadcrumb">
-          <Link to="/events-dashboard">Home</Link> /
+          <Link to="/events-dashboard" onClick={() => clearBookingData()}>Home</Link> /
           <Link to={`/event/${encodeURIComponent(currentEventName)}`}>{currentEventName}</Link> /<span>Book Now</span>
         </div>
 

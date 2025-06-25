@@ -22,7 +22,9 @@ public class EventEntity {
     private List<TransactionsEntity> transactions;
 
     private String event_name;
+    @Column(columnDefinition = "TEXT")
     private String event_description;
+    @Column(columnDefinition = "TEXT")
     private String event_summary;
     private boolean event_isAvailable;
     private double event_price;

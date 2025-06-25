@@ -18,20 +18,27 @@ public class PaymentEntity {
     @JoinColumn(name = "transaction_id")
     @JsonBackReference("transaction-payment")
     private TransactionsEntity transaction;
-
+    private double amountPaid;
     private Date paymentDatePaid;
     private String paymentNote;
     private String paymentReceipt; // Added this field to match ERD
-    private STATUS paymentStatus = STATUS.ACCEPTED;
     private int paymentReferenceNumber; // Added this field to match ERD
-
+    
     @PrePersist
     protected void onCreate() {
         this.paymentDatePaid = Date.valueOf(LocalDateTime.now().toLocalDate());
     }
 
     public enum STATUS {
-        ACCEPTED, REJECTED, RETURNED
+        ACCEPTED, REJECTED, RETURNED, PENDING
+    }
+
+    public double getAmountPaid() {
+        return amountPaid;
+    }
+
+    public void setAmountPaid(double amountPaid) {
+        this.amountPaid = amountPaid;
     }
 
     // Getters and Setters
@@ -73,14 +80,6 @@ public class PaymentEntity {
 
     public void setPaymentReceipt(String paymentReceipt) {
         this.paymentReceipt = paymentReceipt;
-    }
-
-    public STATUS getPaymentStatus() {
-        return paymentStatus;
-    }
-
-    public void setPaymentStatus(STATUS paymentStatus) {
-        this.paymentStatus = paymentStatus;
     }
 
     public int getPaymentReferenceNumber() {

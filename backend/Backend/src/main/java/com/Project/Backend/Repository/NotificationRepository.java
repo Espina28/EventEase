@@ -1,6 +1,7 @@
 package com.Project.Backend.Repository;
 
 import com.Project.Backend.Entity.NotificationEntity;
+import com.Project.Backend.Entity.UserEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -10,14 +11,14 @@ import java.util.List;
 public interface NotificationRepository extends JpaRepository<NotificationEntity, Integer> {
     
     // Find all notifications for a specific user
-    List<NotificationEntity> findByUserUserIdOrderByNotificationDateDesc(int userId);
+    List<NotificationEntity> findByUser(UserEntity user);
     
     // Find all unread notifications for a specific user
-    List<NotificationEntity> findByUserUserIdAndIsReadFalseOrderByNotificationDateDesc(int userId);
+    List<NotificationEntity> findByUserAndIsReadFalseOrderByNotificationDateDesc(UserEntity user);
     
     // Count unread notifications for a specific user
-    long countByUserUserIdAndIsReadFalse(int userId);
+    long countByUserAndIsReadFalse(UserEntity user);
     
     // Find notifications by type for a specific user
-    List<NotificationEntity> findByUserUserIdAndNotificationTypeOrderByNotificationDateDesc(int userId, String notificationType);
+    List<NotificationEntity> findByUserAndNotificationTypeOrderByNotificationDateDesc(UserEntity user, String notificationType);
 }

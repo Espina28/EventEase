@@ -77,7 +77,11 @@ public class SecurityConfig {
                         .requestMatchers("/showcase/**").authenticated()
                         .requestMatchers("/showcasemedia/**").authenticated()
                         .requestMatchers("/serviceoffering/**").authenticated()
-                        .requestMatchers("/package/**").authenticated() //temporary
+                        .requestMatchers("/package/**").authenticated()
+                        .requestMatchers("/payment/**").authenticated()
+                        .requestMatchers("/bookingrejectionnote/**").authenticated()
+                        .requestMatchers("/form-draft/**").authenticated()
+                        .requestMatchers("/email/**").permitAll() //temporary
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))

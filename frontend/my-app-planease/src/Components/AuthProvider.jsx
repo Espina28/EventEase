@@ -37,14 +37,17 @@ export const AuthProvider = ({ children }) => {
       setIsAuthenticated(true)
 
       try {
-        // Try to verify the token, but don't log out if it fails temporarily
-        // This is a "soft verification" approach
-        await axios.get("http://localhost:8080/user/getuser", {
+        // Try to verify the token and fetch user data
+        const response = await axios.get("http://localhost:8080/user/getuser", {
           headers: { Authorization: `Bearer ${storedToken}` },
         })
 
-        // If we get here, the token is valid
+        // If we get here, the token is valid and we have user data
         console.log("Token verified successfully")
+        console.log("User data fetched:", response.data)
+        
+        // Set the user data
+        setUser(response.data)
       } catch (error) {
         console.log("Token verification check:", error.response?.status)
 
@@ -55,6 +58,7 @@ export const AuthProvider = ({ children }) => {
           // Token is definitely invalid
           setIsAuthenticated(false)
           setToken("")
+          setUser(null)
           localStorage.removeItem("token")
         } else {
           // For other errors (network, 500, etc.), keep the user logged in

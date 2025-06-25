@@ -1,12 +1,12 @@
 "use client"
 
 import { useState, useEffect, useRef, useMemo } from "react"
-import { Eye, EyeOff, ChevronDown } from "lucide-react"
+import { Eye, EyeOff, ChevronDown, X } from "lucide-react"
 import { Link, useNavigate } from "react-router-dom"
 import CustomInput from "../Components/CustomInput"
 import CustomButton from "../Components/CustomButton"
 import axios from "axios"
-import { motion, AnimatePresence } from "framer-motion" // Import framer-motion
+import { motion, AnimatePresence } from "framer-motion"
 
 export default function SignUpPage() {
   const [showPassword, setShowPassword] = useState(false)
@@ -22,6 +22,16 @@ export default function SignUpPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
   const navigate = useNavigate()
+
+  // OTP Modal states
+  const [showOTPModal, setShowOTPModal] = useState(false)
+  const [otpValue, setOtpValue] = useState("")
+  const [otpError, setOtpError] = useState("")
+  const [otpTimer, setOtpTimer] = useState(300)
+  const [isResendingOTP, setIsResendingOTP] = useState(false)
+  const [isSendingOTP, setIsSendingOTP] = useState(false)
+  const [pendingRegistrationData, setPendingRegistrationData] = useState(null)
+  const otpTimerRef = useRef(null)
 
   // Location state
   const [regions, setRegions] = useState([])
@@ -39,6 +49,9 @@ export default function SignUpPage() {
   const [selectedProvinceName, setSelectedProvinceName] = useState("")
   const [selectedCityMunicipalityName, setSelectedCityMunicipalityName] = useState("")
   const [selectedBarangayName, setSelectedBarangayName] = useState("")
+
+  // Add this after the existing location state variables
+  const [isOutsideMasbate, setIsOutsideMasbate] = useState(false)
 
   const [phoneNumber, setPhoneNumber] = useState("")
   const [selectedCountry, setSelectedCountry] = useState({ code: "PH", dialCode: "+63", flag: "🇵🇭" })
@@ -70,6 +83,13 @@ export default function SignUpPage() {
   const [countries, setCountries] = useState([
     { code: "PH", dialCode: "+63", flag: "🇵🇭", name: "Philippines" }, // Default while loading
   ])
+
+  // Format seconds to MM:SS display
+  const formatTime = (seconds) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
 
   // Generate confetti particles data with useMemo to ensure it doesn't regenerate on re-renders
   const confettiParticles = useMemo(() => {
@@ -133,13 +153,80 @@ export default function SignUpPage() {
       })
   }, [])
 
-  // Fetch Regions on mount
+  // Replace the existing useEffect for fetching regions
   useEffect(() => {
-    axios
-      .get("https://psgc.gitlab.io/api/regions/")
-      .then((res) => setRegions(res.data))
-      .catch((err) => console.error("Error fetching regions:", err))
+    const fetchRegionsAndSetDefaults = async () => {
+      try {
+        const regionsResponse = await axios.get("https://psgc.gitlab.io/api/regions/")
+        setRegions(regionsResponse.data)
+
+        // Find Masbate region (Region V - Bicol Region)
+        const masbateRegion = regionsResponse.data.find(
+          (region) => region.name.includes("Bicol") || region.code === "050000000",
+        )
+
+        if (masbateRegion) {
+          setSelectedRegion(masbateRegion.code)
+          setSelectedRegionName(masbateRegion.name)
+
+          // Fetch provinces for Bicol region
+          const provincesResponse = await axios.get(
+            `https://psgc.gitlab.io/api/regions/${masbateRegion.code}/provinces/`,
+          )
+          setProvinces(provincesResponse.data)
+
+          // Find Masbate province
+          const masbateProvince = provincesResponse.data.find((province) => province.name.includes("Masbate"))
+
+          if (masbateProvince) {
+            setSelectedProvince(masbateProvince.code)
+            setSelectedProvinceName(masbateProvince.name)
+
+            // Fetch cities/municipalities for Masbate
+            const citiesResponse = await axios.get(
+              `https://psgc.gitlab.io/api/provinces/${masbateProvince.code}/cities-municipalities/`,
+            )
+            setCitiesMunicipalities(citiesResponse.data)
+          }
+        }
+      } catch (err) {
+        console.error("Error setting up default location:", err)
+      }
+    }
+
+    fetchRegionsAndSetDefaults()
   }, [])
+
+  // Reset OTP input and error when modal opens
+  useEffect(() => {
+    if (showOTPModal) {
+      setOtpValue("")
+      setOtpError("")
+      if (otpTimerRef.current) clearInterval(otpTimerRef.current)
+    }
+  }, [showOTPModal])
+
+  // Start timer only when modal is open and isSendingOTP becomes false
+  useEffect(() => {
+    if (showOTPModal && !isSendingOTP) {
+      setOtpTimer(300)
+      if (otpTimerRef.current) clearInterval(otpTimerRef.current)
+      otpTimerRef.current = setInterval(() => {
+        setOtpTimer((prev) => {
+          if (prev <= 1) {
+            clearInterval(otpTimerRef.current)
+            return 0
+          }
+          return prev - 1
+        })
+      }, 1000)
+      return () => clearInterval(otpTimerRef.current)
+    }
+    // If modal closes or loading starts, clear timer
+    return () => {
+      if (otpTimerRef.current) clearInterval(otpTimerRef.current)
+    }
+  }, [showOTPModal, isSendingOTP])
 
   // Update the handleRegionChange function
   const handleRegionChange = async (e) => {
@@ -216,6 +303,63 @@ export default function SignUpPage() {
     setSelectedBarangayName(barangayName)
   }
 
+  // Add this handler after the existing location handlers
+  const handleOutsideMasbateChange = async (e) => {
+    const isChecked = e.target.checked
+    setIsOutsideMasbate(isChecked)
+
+    if (!isChecked) {
+      // Reset to Masbate defaults
+      const masbateRegion = regions.find((region) => region.name.includes("Bicol") || region.code === "050000000")
+
+      if (masbateRegion) {
+        setSelectedRegion(masbateRegion.code)
+        setSelectedRegionName(masbateRegion.name)
+
+        try {
+          const provincesResponse = await axios.get(
+            `https://psgc.gitlab.io/api/regions/${masbateRegion.code}/provinces/`,
+          )
+          setProvinces(provincesResponse.data)
+
+          const masbateProvince = provincesResponse.data.find((province) => province.name.includes("Masbate"))
+
+          if (masbateProvince) {
+            setSelectedProvince(masbateProvince.code)
+            setSelectedProvinceName(masbateProvince.name)
+
+            const citiesResponse = await axios.get(
+              `https://psgc.gitlab.io/api/provinces/${masbateProvince.code}/cities-municipalities/`,
+            )
+            setCitiesMunicipalities(citiesResponse.data)
+          }
+        } catch (err) {
+          console.error("Error resetting to Masbate:", err)
+        }
+      }
+
+      // Clear city and barangay selections
+      setSelectedCityMunicipality("")
+      setSelectedCityMunicipalityName("")
+      setSelectedBarangay("")
+      setSelectedBarangayName("")
+      setBarangays([])
+    } else {
+      // Clear all selections when enabling outside Masbate
+      setSelectedRegion("")
+      setSelectedRegionName("")
+      setSelectedProvince("")
+      setSelectedProvinceName("")
+      setSelectedCityMunicipality("")
+      setSelectedCityMunicipalityName("")
+      setSelectedBarangay("")
+      setSelectedBarangayName("")
+      setProvinces([])
+      setCitiesMunicipalities([])
+      setBarangays([])
+    }
+  }
+
   // Close country dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event) {
@@ -271,7 +415,7 @@ export default function SignUpPage() {
     setPasswordsMatch(value === password)
   }
 
-  // Update the handleRegister function to send names instead of codes
+  // Modified handleRegister function to show OTP modal instead of registering immediately
   const handleRegister = async (e) => {
     e.preventDefault()
     setIsSubmitting(true)
@@ -283,38 +427,40 @@ export default function SignUpPage() {
       return
     }
 
-    try {
-      const response = await axios.post("http://localhost:8080/user/register", {
-        firstname,
-        lastname,
-        email,
-        password,
-        phoneNumber: selectedCountry.dialCode + phoneNumber,
-        region: selectedRegionName,
-        province: selectedProvinceName,
-        cityAndMul: selectedCityMunicipalityName,
-        barangay: selectedBarangayName,
-        role: "User",
-        profilePicture: null,
-        isGoogle: false,
-        isFacebook: false,
-      })
+    // Prepare registration data
+    const registrationData = {
+      firstname,
+      lastname,
+      email,
+      password,
+      phoneNumber: selectedCountry.dialCode + phoneNumber,
+      region: selectedRegionName,
+      province: selectedProvinceName,
+      cityAndMul: selectedCityMunicipalityName,
+      barangay: selectedBarangayName,
+      role: "User",
+      profilePicture: null,
+      isGoogle: false,
+      isFacebook: false,
+    }
 
-      if (response.status === 201 || response.status === 200) {
-        // After successful user registration, also create regular user entity
-        try {
-          await axios.post("http://localhost:8080/regularuser/create", response.data)
-        } catch (error) {
-          console.error("Regular user creation error:", error)
-          // Optionally handle error, but do not block navigation
-        }
-        alert("Registration Successful! Redirecting to login...")
-        navigate("/login")
+    // Store registration data for later use
+    setPendingRegistrationData(registrationData)
+
+    // Show OTP modal and send OTP
+    setShowOTPModal(true)
+    setIsSendingOTP(true)
+
+    try {
+      const response = await axios.get(`http://localhost:8080/email/send-email/${email}`)
+      if (response && response.data) {
+        console.log("OTP email response:", response.data)
       }
-    } catch (error) {
-      console.error("Registration Error:", error)
-      setErrorMessage(error.response?.data?.message || "Registration failed. Please try again.")
+    } catch (err) {
+      console.error("Failed to send OTP:", err)
+      setOtpError("Failed to send OTP. Please try again.")
     } finally {
+      setIsSendingOTP(false)
       setIsSubmitting(false)
     }
   }
@@ -793,84 +939,105 @@ export default function SignUpPage() {
               </div>
             )}
 
-            {/* Region and Province in the same row */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Region */}
-              <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-700">Region</label>
-                <select
-                  className="w-full p-2 border rounded focus:border-amber-500 focus:ring focus:ring-amber-200 focus:ring-opacity-50 transition-all"
-                  onChange={handleRegionChange}
-                  value={selectedRegion}
-                  required
-                >
-                  <option value="">Select Region</option>
-                  {regions.map((region) => (
-                    <option key={region.code} value={region.code}>
-                      {region.name}
-                    </option>
-                  ))}
-                </select>
+            {/* Location Section with Masbate Default */}
+            <div className="space-y-4">
+              {/* Checkbox for outside Masbate */}
+              <div className="inline-flex items-center mb-4">
+                <input
+                  type="checkbox"
+                  id="outsideMasbate"
+                  checked={isOutsideMasbate}
+                  onChange={handleOutsideMasbateChange}
+                  className="w-4 h-4 text-amber-600 bg-gray-100 border-gray-300 rounded focus:ring-0"
+                />
+                <label htmlFor="outsideMasbate" className="ml-2 text-sm text-gray-700 whitespace-nowrap">
+                  I'm outside the region of Masbate
+                </label>
               </div>
 
-              {/* Province */}
-              <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-700">Province</label>
-                <select
-                  className="w-full p-2 border rounded focus:border-amber-500 focus:ring focus:ring-amber-200 focus:ring-opacity-50 transition-all"
-                  onChange={handleProvinceChange}
-                  disabled={!selectedRegion}
-                  value={selectedProvince}
-                  required
-                >
-                  <option value="">Select Province</option>
-                  {provinces.map((province) => (
-                    <option key={province.code} value={province.code}>
-                      {province.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
+              {/* Conditionally show Region and Province if outside Masbate */}
+              {isOutsideMasbate && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Region */}
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium text-gray-700">Region</label>
+                    <select
+                      className="w-full p-2 border rounded focus:border-amber-500 focus:ring focus:ring-amber-200 focus:ring-opacity-50 transition-all"
+                      onChange={handleRegionChange}
+                      value={selectedRegion}
+                      required
+                    >
+                      <option value="">Select Region</option>
+                      {regions.map((region) => (
+                        <option key={region.code} value={region.code}>
+                          {region.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-            {/* City/Municipality and Barangay in the same row */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* City/Municipality */}
-              <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-700">City/Municipality</label>
-                <select
-                  className="w-full p-2 border rounded focus:border-amber-500 focus:ring focus:ring-amber-200 focus:ring-opacity-50 transition-all"
-                  onChange={handleCityMunicipalityChange}
-                  disabled={!selectedProvince}
-                  value={selectedCityMunicipality}
-                  required
-                >
-                  <option value="">Select City/Municipality</option>
-                  {citiesMunicipalities.map((city) => (
-                    <option key={city.code} value={city.code}>
-                      {city.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                  {/* Province */}
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium text-gray-700">Province</label>
+                    <select
+                      className="w-full p-2 border rounded focus:border-amber-500 focus:ring focus:ring-amber-200 focus:ring-opacity-50 transition-all"
+                      onChange={handleProvinceChange}
+                      disabled={!selectedRegion}
+                      value={selectedProvince}
+                      required
+                    >
+                      <option value="">Select Province</option>
+                      {provinces.map((province) => (
+                        <option key={province.code} value={province.code}>
+                          {province.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )}
 
-              {/* Barangay */}
-              <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-700">Barangay</label>
-                <select
-                  className="w-full p-2 border rounded focus:border-amber-500 focus:ring focus:ring-amber-200 focus:ring-opacity-50 transition-all"
-                  onChange={handleBarangayChange}
-                  disabled={!selectedCityMunicipality}
-                  value={selectedBarangay}
-                  required
-                >
-                  <option value="">Select Barangay</option>
-                  {barangays.map((barangay) => (
-                    <option key={barangay.code} value={barangay.code}>
-                      {barangay.name}
-                    </option>
-                  ))}
-                </select>
+              {/* Always show City/Municipality and Barangay */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* City/Municipality */}
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-gray-700">
+                    City/Municipality {!isOutsideMasbate && <span className="text-gray-500">(Masbate)</span>}
+                  </label>
+                  <select
+                    className="w-full p-2 border rounded focus:border-amber-500 focus:ring focus:ring-amber-200 focus:ring-opacity-50 transition-all"
+                    onChange={handleCityMunicipalityChange}
+                    disabled={isOutsideMasbate ? !selectedProvince : false}
+                    value={selectedCityMunicipality}
+                    required
+                  >
+                    <option value="">Select City/Municipality</option>
+                    {citiesMunicipalities.map((city) => (
+                      <option key={city.code} value={city.code}>
+                        {city.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Barangay */}
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-gray-700">Barangay</label>
+                  <select
+                    className="w-full p-2 border rounded focus:border-amber-500 focus:ring focus:ring-amber-200 focus:ring-opacity-50 transition-all"
+                    onChange={handleBarangayChange}
+                    disabled={!selectedCityMunicipality}
+                    value={selectedBarangay}
+                    required
+                  >
+                    <option value="">Select Barangay</option>
+                    {barangays.map((barangay) => (
+                      <option key={barangay.code} value={barangay.code}>
+                        {barangay.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
 
@@ -882,7 +1049,7 @@ export default function SignUpPage() {
                 fontSize="text-sm"
                 disabled={isSubmitting}
               >
-                {isSubmitting ? "REGISTERING..." : "SIGN UP"}
+                {isSubmitting ? "SENDING OTP..." : "SIGN UP"}
               </CustomButton>
             </motion.div>
 
@@ -896,6 +1063,164 @@ export default function SignUpPage() {
           </form>
         </motion.div>
       </div>
+
+      {/* OTP Modal */}
+      {showOTPModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div
+            className="bg-white rounded-md shadow-lg w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-300 relative"
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            {/* Modal header */}
+            <div className="bg-slate-900 h-12 relative flex items-center justify-between px-4">
+              <div className="text-white font-medium">Verify Your Email</div>
+              <button
+                onClick={() => {
+                  setShowOTPModal(false)
+                  setOtpError("Please enter a valid email")
+                  setErrorMessage("Please enter a valid email")
+                }}
+                className="text-white hover:text-gray-300"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Modal content */}
+            <div className="p-6 min-h-[200px] flex flex-col justify-center">
+              {isSendingOTP ? (
+                <div className="flex flex-col items-center justify-center h-full py-8">
+                  <div className="w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                  <div className="text-gray-700 text-center font-medium">
+                    We are sending you an OTP to your email...
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <p className="text-gray-600 mb-4">
+                    Please enter the 6-digit OTP sent to your email <span className="font-semibold">{email}</span>.
+                  </p>
+                  {otpError && (
+                    <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-md">{otpError}</div>
+                  )}
+                  <form
+                    onSubmit={async (e) => {
+                      e.preventDefault()
+                      setOtpError("")
+                      if (!otpValue || otpValue.length !== 6) {
+                        setOtpError("Please enter the 6-digit OTP.")
+                        return
+                      }
+                      try {
+                        const response = await axios.get(`http://localhost:8080/email/validate-otp`, {
+                          params: { email: email, OTP: otpValue },
+                        })
+                        if (response.data === true) {
+                          // OTP is valid, proceed with registration
+                          try {
+                            const registerResponse = await axios.post(
+                              "http://localhost:8080/user/register",
+                              pendingRegistrationData,
+                            )
+
+                            if (registerResponse.status === 201 || registerResponse.status === 200) {
+                              // After successful user registration, also create regular user entity
+                              try {
+                                await axios.post("http://localhost:8080/regularuser/create", registerResponse.data)
+                              } catch (error) {
+                                console.error("Regular user creation error:", error)
+                                // Optionally handle error, but do not block navigation
+                              }
+                              setShowOTPModal(false)
+                              alert("Registration Successful! Redirecting to login...")
+                              navigate("/login")
+                            }
+                          } catch (error) {
+                            console.error("Registration Error:", error)
+                            setOtpError("Registration failed. Please try again.")
+                          }
+                        } else {
+                          setOtpError("Invalid OTP. Please try again.")
+                        }
+                      } catch (err) {
+                        setOtpError("Failed to validate OTP. Please try again.")
+                      }
+                    }}
+                    className="space-y-4"
+                  >
+                    <div className="space-y-2">
+                      <label htmlFor="otp" className="text-sm font-medium text-gray-700">
+                        OTP
+                      </label>
+                      <input
+                        id="otp"
+                        type="text"
+                        value={otpValue}
+                        onChange={(e) => setOtpValue(e.target.value.replace(/[^0-9]/g, "").slice(0, 6))}
+                        className="w-full h-11 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 text-center tracking-widest text-lg"
+                        placeholder="------"
+                        maxLength={6}
+                        autoFocus
+                      />
+                    </div>
+                    <div className="flex items-center justify-between mt-2">
+                      <div className="text-sm text-gray-500">
+                        {otpTimer > 0 ? (
+                          <>
+                            Resend OTP in <span className="font-semibold">{formatTime(otpTimer)}</span>
+                          </>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              setIsResendingOTP(true)
+                              setIsSendingOTP(true)
+                              setOtpError("")
+                              setOtpValue("")
+                              try {
+                                const response = await axios.get(`http://localhost:8080/email/send-email/${email}`)
+                                if (response && response.data) {
+                                  console.log("OTP email response:", response.data)
+                                }
+                              } catch (err) {
+                                setOtpError("Failed to resend OTP. Please try again.")
+                              }
+                              setIsResendingOTP(false)
+                              setIsSendingOTP(false)
+                              setOtpTimer(300)
+                              if (otpTimerRef.current) clearInterval(otpTimerRef.current)
+                              otpTimerRef.current = setInterval(() => {
+                                setOtpTimer((prev) => {
+                                  if (prev <= 1) {
+                                    clearInterval(otpTimerRef.current)
+                                    return 0
+                                  }
+                                  return prev - 1
+                                })
+                              }, 1000)
+                            }}
+                            disabled={isResendingOTP}
+                            className="text-amber-600 hover:underline disabled:opacity-60"
+                          >
+                            {isResendingOTP ? "Resending..." : "Resend OTP"}
+                          </button>
+                        )}
+                      </div>
+                      <button
+                        type="submit"
+                        className="px-4 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-700 disabled:opacity-70"
+                        disabled={otpValue.length !== 6}
+                      >
+                        Verify & Register
+                      </button>
+                    </div>
+                  </form>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

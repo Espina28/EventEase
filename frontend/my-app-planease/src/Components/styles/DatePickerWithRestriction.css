@@ -131,6 +131,12 @@
   position: relative;
 }
 
+.fully-booked-day {
+  color: #FF5252;
+  cursor: not-allowed;
+  position: relative;
+}
+
 .disabled-day:hover .tooltip-text {
   display: block;
 }
@@ -195,6 +201,10 @@
 
 .disabled-dot {
   background-color: #ccc;
+}
+
+.fully-booked-dot {
+  background-color: #FF5252;
 }
 
 .today-dot {

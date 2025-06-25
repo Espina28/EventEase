@@ -20,7 +20,7 @@ public class PackageServicesEntity {
     private PackagesEntity packages;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "subcontractor_id")
+    @JoinColumn(name = "subcontractor_id", nullable = true)
     @JsonBackReference("subcontractor-package-service")
     private SubcontractorEntity subcontractor;
 

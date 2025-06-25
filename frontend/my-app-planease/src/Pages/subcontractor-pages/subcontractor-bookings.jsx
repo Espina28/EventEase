@@ -70,50 +70,66 @@ export default function SubcontractorBookings() {
       
       try {
         const token = localStorage.getItem('token');
-        const response = await axios.get('http://localhost:8080/api/transactions/getAllTransactions', {
+
+        const userResponse = await axios.get('http://localhost:8080/user/getcurrentuser', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        const email = userResponse.data.email;
+
+
+        const response = await axios.get(`http://localhost:8080/api/transactions/getTransactionByEmail/${email}`, {
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           }
         });
+
+        console.log(response.data);
         
         // Map the transaction data to the format expected by the component
+        // Replace the map logic inside fetchTransactions in SubcontractorBookings
         const formattedBookings = response.data.map(transaction => {
-          // Now we can use the event data directly from TransactionDTO
-          const eventName = transaction.eventName || 'Event Name Unavailable';
-          
-          // Format the date - assuming transaction.date is in format like "2025-05-15"
-          const date = new Date(transaction.date);
-          const formattedDate = date.toLocaleDateString('en-US', { 
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
+          const eventName = transaction.eventName || 'N/A';
+          const formattedDate = new Date(transaction.transactionDate).toLocaleDateString('en-US', { 
+            year: 'numeric', month: 'long', day: 'numeric'
           });
+
+          const displayStatusMap = {
+            COMPLETED: "Success",
+            CANCELLED: "Cancelled",
+            DECLINED: "Declined",
+            PENDING: "Pending",
+            ONGOING: "Ongoing"
+          };
           
-          // Map status values (adjust according to your data)
-          let displayStatus = "Pending";
-          if (transaction.status === "SUCCESS") displayStatus = "Success";
-          if (transaction.status === "CANCELLED") displayStatus = "Cancelled";
-          
-          // Format price with peso sign
-          const formattedPrice = transaction.eventPrice ? 
-            `₱${transaction.eventPrice.toLocaleString()}` : 
-            '₱50,000'; // Default price if not available
-          
-          // For debugging
-          console.log('Transaction with event details:', transaction);
-          
+          const displayStatus = displayStatusMap[transaction.transactionStatus] || "Unknown";   
+
+          const formattedAmount = transaction.payment?.amountPaid
+            ? `₱${Number(transaction.payment.amountPaid).toLocaleString()}`
+            : '₱0.00';
+
           return {
-            id: transaction.transactionId,
-            name: eventName,
+            id: transaction.transaction_Id,
+            name: transaction.userName,
+            eventName: eventName,
             eventDate: formattedDate,
-            amount: formattedPrice,
+            amount: formattedAmount,
             status: displayStatus,
-            // Store additional data if needed for the detail view
-            eventDescription: transaction.eventDescription,
-            venue: transaction.venue
+            email: transaction.userEmail,
+            contact: transaction.phoneNumber,
+            place: transaction.transactionVenue,
+            range: formattedDate,
+            note: transaction.transactionNote,
+            userAddress: transaction.userAddress,
+            packages: transaction.packages,
+            payment: transaction.payment,
+            subcontractors: transaction.subcontractors
           };
         });
+
         
         setBookings(formattedBookings);
         setLoading(false);
@@ -200,25 +216,19 @@ export default function SubcontractorBookings() {
       case 'success':
         return { bgcolor: '#d1f5d3', color: '#00a811' };
       case 'cancelled':
+      case 'declined':
         return { bgcolor: '#ffd1d1', color: '#ff0000' };
       case 'pending':
         return { bgcolor: '#fff2d1', color: '#ffa500' };
+      case 'ongoing':
+        return { bgcolor: '#d1e5ff', color: '#0055ff' };
       default:
         return { bgcolor: '#e0e0e0', color: '#000000' };
     }
   };
   
   // Mock data for the modal
-  const getSelectedRowDetails = (row) => {
-    return {
-      ...row,
-      email: `${row.name.split(' ')[0].toLowerCase()}@example.com`,
-      contact: `+63 900 000 ${String(row.id).padStart(4, "0")}`,
-      place: `Venue ${row.id}`,
-      range: row.eventDate,
-      note: `Note for event with ${row.name} scheduled on ${row.eventDate}.`
-    };
-  };
+  const getSelectedRowDetails = (row) => row;
 
   return (
     <div className="h-screen grid grid-rows-[auto_1fr]">
@@ -305,7 +315,7 @@ export default function SubcontractorBookings() {
                 <TableRow>
                   <TableCell sx={{ fontWeight: 'bold' }}>Name</TableCell>
                   <TableCell sx={{ fontWeight: 'bold' }}>Event Date</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }}>Amount</TableCell>
+                  {/* <TableCell sx={{ fontWeight: 'bold' }}>Amount</TableCell> */}
                   <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
                 </TableRow>
               </TableHead>
@@ -319,7 +329,7 @@ export default function SubcontractorBookings() {
                   >
                     <TableCell>{booking.name}</TableCell>
                     <TableCell>{booking.eventDate}</TableCell>
-                    <TableCell>{booking.amount}</TableCell>
+                    {/* <TableCell>{booking.amount}</TableCell> */}
                     <TableCell>
                       <Chip 
                         label={booking.status} 

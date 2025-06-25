@@ -18,6 +18,7 @@ const psgcApi = axios.create({
 })
 
 export function ProfileModal({ open, onOpenChange }) {
+  // All hooks must be at the top, before any conditional or return
   const modalRef = useRef(null)
   const [editMode, setEditMode] = useState(false)
   const [user, setUser] = useState({
@@ -32,8 +33,6 @@ export function ProfileModal({ open, onOpenChange }) {
     profilePicture: null,
     role: "",
   })
-
-  // Password change modals state
   const [showPasswordModal, setShowPasswordModal] = useState(false)
   const [showNewPasswordModal, setShowNewPasswordModal] = useState(false)
   const [currentPassword, setCurrentPassword] = useState("")
@@ -45,43 +44,42 @@ export function ProfileModal({ open, onOpenChange }) {
   const [passwordsMatch, setPasswordsMatch] = useState(true)
   const [isCheckingPassword, setIsCheckingPassword] = useState(false)
   const [isChangingPassword, setIsChangingPassword] = useState(false)
-
-  // Location state
   const [regions, setRegions] = useState([])
   const [provinces, setProvinces] = useState([])
   const [citiesMunicipalities, setCitiesMunicipalities] = useState([])
   const [barangays, setBarangays] = useState([])
-
   const [selectedRegion, setSelectedRegion] = useState("")
   const [selectedProvince, setSelectedProvince] = useState("")
   const [selectedCityMunicipality, setSelectedCityMunicipality] = useState("")
   const [selectedBarangay, setSelectedBarangay] = useState("")
-
-  // Phone number state
   const [phoneNumber, setPhoneNumber] = useState("")
   const [selectedCountry, setSelectedCountry] = useState({ code: "PH", dialCode: "+63", flag: "🇵🇭" })
   const [showCountryList, setShowCountryList] = useState(false)
   const countryListRef = useRef(null)
-
-  // Countries data with flags and dial codes
   const [countries, setCountries] = useState([
-    { code: "PH", dialCode: "+63", flag: "🇵🇭", name: "Philippines" }, // Default while loading
+    { code: "PH", dialCode: "+63", flag: "🇵🇭", name: "Philippines" },
   ])
-
-  // Snackbar state
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
     severity: "success",
   })
+  const [showOTPModal, setShowOTPModal] = useState(false)
+  const [otpValue, setOtpValue] = useState("")
+  const [otpError, setOtpError] = useState("")
+  const [otpTimer, setOtpTimer] = useState(60)
+  const [isResendingOTP, setIsResendingOTP] = useState(false)
+  const otpTimerRef = useRef(null)
+  const [isSendingOTP, setIsSendingOTP] = useState(false)
+  const [pendingProfileUpdate, setPendingProfileUpdate] = useState(null)
 
-  // Fetch countries
+  // All useEffect hooks must also be at the top, before any return or conditional
   useEffect(() => {
     fetch("https://restcountries.com/v3.1/all?fields=name,cca2,idd,flag")
       .then((response) => response.json())
       .then((data) => {
         const formattedCountries = data
-          .filter((country) => country.idd.root) // Only countries with dial codes
+          .filter((country) => country.idd.root)
           .map((country) => ({
             code: country.cca2,
             dialCode: country.idd.root + (country.idd.suffixes?.[0] || ""),
@@ -89,11 +87,8 @@ export function ProfileModal({ open, onOpenChange }) {
             name: country.name.common,
           }))
           .sort((a, b) => a.name.localeCompare(b.name))
-
-        // Set Philippines as first in the list
         const philippines = formattedCountries.find((c) => c.code === "PH")
         const withoutPH = formattedCountries.filter((c) => c.code !== "PH")
-
         setCountries([philippines, ...withoutPH].filter(Boolean))
       })
       .catch((error) => {
@@ -101,21 +96,18 @@ export function ProfileModal({ open, onOpenChange }) {
       })
   }, [])
 
-  // Close country dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event) {
       if (countryListRef.current && !countryListRef.current.contains(event.target)) {
         setShowCountryList(false)
       }
     }
-
     document.addEventListener("mousedown", handleClickOutside)
     return () => {
       document.removeEventListener("mousedown", handleClickOutside)
     }
   }, [])
 
-  // Fetch Regions on mount using separate PSGC axios instance
   useEffect(() => {
     psgcApi
       .get("/regions/")
@@ -127,15 +119,10 @@ export function ProfileModal({ open, onOpenChange }) {
     const fetchUser = async () => {
       try {
         const token = localStorage.getItem("token")
-
-        // Use regular axios for backend API calls (with auth headers)
         const { data: userData } = await axios.get(`${API_BASE_URL}/user/getuser`, {
           headers: { Authorization: `Bearer ${token}` },
         })
-
-        // Fix: Use phoneNumber from userData
         const userPhone = userData.phoneNumber || ""
-
         setUser({
           firstname: userData.firstname || "",
           lastname: userData.lastname || "",
@@ -148,73 +135,52 @@ export function ProfileModal({ open, onOpenChange }) {
           profilePicture: userData.profilePicture || null,
           role: userData.role || "",
         })
-
-        // Extract phone number without country code if it exists
         if (userPhone) {
-          // Try to match the phone number format (e.g., +63912345678)
           const phoneMatch = userPhone.match(/^\+(\d+)(\d{9,})$/)
           if (phoneMatch) {
             const countryCode = `+${phoneMatch[1]}`
             const phoneNum = phoneMatch[2]
-
-            // Find the country by dial code
             const country = countries.find((c) => c.dialCode === countryCode) || countries[0]
             setSelectedCountry(country)
             setPhoneNumber(phoneNum)
           } else {
-            // If format doesn't match, just use the whole string
-            setPhoneNumber(userPhone.replace(/^\+\d+/, "")) // Remove country code if present
+            setPhoneNumber(userPhone.replace(/^\+\d+/, ""))
           }
         }
       } catch (err) {
         console.error("Failed to fetch user:", err)
       }
     }
-
     if (open) fetchUser()
   }, [open, countries])
 
-  // Set up location dropdowns when user data is loaded
   useEffect(() => {
     const setupLocationData = async () => {
       if (user.region) {
-        // Find the region code by name
         const regionData = regions.find((r) => r.name === user.region)
         if (regionData) {
           setSelectedRegion(regionData.code)
-
-          // Fetch provinces for this region using PSGC API
           try {
             const { data } = await psgcApi.get(`/regions/${regionData.code}/provinces/`)
             setProvinces(data)
-
-            // Find province by name
             if (user.province) {
               const provinceData = data.find((p) => p.name === user.province)
               if (provinceData) {
                 setSelectedProvince(provinceData.code)
-
-                // Fetch cities for this province using PSGC API
                 try {
                   const { data: citiesData } = await psgcApi.get(
                     `/provinces/${provinceData.code}/cities-municipalities/`,
                   )
                   setCitiesMunicipalities(citiesData)
-
-                  // Find city by name
                   if (user.cityAndMul) {
                     const cityData = citiesData.find((c) => c.name === user.cityAndMul)
                     if (cityData) {
                       setSelectedCityMunicipality(cityData.code)
-
-                      // Fetch barangays for this city using PSGC API
                       try {
                         const { data: barangaysData } = await psgcApi.get(
                           `/cities-municipalities/${cityData.code}/barangays/`,
                         )
                         setBarangays(barangaysData)
-
-                        // Find barangay by name
                         if (user.barangay) {
                           const barangayData = barangaysData.find((b) => b.name === user.barangay)
                           if (barangayData) {
@@ -237,7 +203,6 @@ export function ProfileModal({ open, onOpenChange }) {
         }
       }
     }
-
     if (regions.length > 0 && user.region) {
       setupLocationData()
     }
@@ -249,23 +214,51 @@ export function ProfileModal({ open, onOpenChange }) {
         onOpenChange(false)
       }
     }
-
     const handleEscapeKey = (event) => {
       if (event.key === "Escape") onOpenChange(false)
     }
-
     if (open) {
       document.addEventListener("mousedown", handleClickOutside)
       document.addEventListener("keydown", handleEscapeKey)
       document.body.style.overflow = "hidden"
     }
-
     return () => {
       document.removeEventListener("mousedown", handleClickOutside)
       document.removeEventListener("keydown", handleEscapeKey)
       document.body.style.overflow = "auto"
     }
   }, [open, onOpenChange])
+
+  // Reset OTP input and error when modal opens
+  useEffect(() => {
+    if (showOTPModal) {
+      setOtpValue("")
+      setOtpError("")
+      if (otpTimerRef.current) clearInterval(otpTimerRef.current)
+    }
+  }, [showOTPModal])
+
+  // Start timer only when modal is open and isSendingOTP becomes false
+  useEffect(() => {
+    if (showOTPModal && !isSendingOTP) {
+      setOtpTimer(60)
+      if (otpTimerRef.current) clearInterval(otpTimerRef.current)
+      otpTimerRef.current = setInterval(() => {
+        setOtpTimer((prev) => {
+          if (prev <= 1) {
+            clearInterval(otpTimerRef.current)
+            return 0
+          }
+          return prev - 1
+        })
+      }, 1000)
+      return () => clearInterval(otpTimerRef.current)
+    }
+    // If modal closes or loading starts, clear timer
+    return () => {
+      if (otpTimerRef.current) clearInterval(otpTimerRef.current)
+    }
+  }, [showOTPModal, isSendingOTP])
 
   if (!open) return null
 
@@ -443,63 +436,28 @@ export function ProfileModal({ open, onOpenChange }) {
   }
 
   const handleSaveChanges = async () => {
+    // Prepare the updated user data as before
+    const updatedUser = {
+      firstname: user.firstname,
+      lastname: user.lastname,
+      phoneNumber: user.phone,
+      region: user.region,
+      province: user.province,
+      cityAndMul: user.cityAndMul,
+      barangay: user.barangay,
+    }
+    setPendingProfileUpdate(updatedUser)
+    setShowOTPModal(true)
+    setIsSendingOTP(true)
     try {
-      const token = localStorage.getItem("token")
-      if (!token) {
-        console.error("No authentication token found")
-        return
+      const response = await axios.get(`http://localhost:8080/email/send-email/${user.email}`)
+      if (response && response.data) {
+        console.log('OTP email response:', response.data)
       }
-
-      // Prepare the updated user data
-      const updatedUser = {
-        firstname: user.firstname,
-        lastname: user.lastname,
-        phoneNumber: user.phone, // Using the full phone number with country code
-        region: user.region,
-        province: user.province,
-        cityAndMul: user.cityAndMul,
-        barangay: user.barangay,
-      }
-
-      // Call the update endpoint - use regular axios for backend API
-      const response = await axios.put(`${API_BASE_URL}/user/update`, updatedUser, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-
-      if (response.status === 200) {
-        // Update was successful
-        setEditMode(false)
-
-        // Show success message with snackbar
-        setSnackbar({
-          open: true,
-          message: "Profile updated successfully",
-          severity: "success",
-        })
-      }
-    } catch (error) {
-      console.error("Failed to update user profile:", error)
-
-      // Show error message
-      if (error.response && error.response.status === 404) {
-        setSnackbar({
-          open: true,
-          message: "User not found. Please try again.",
-          severity: "error",
-        })
-      } else if (error.response && error.response.status === 401) {
-        setSnackbar({
-          open: true,
-          message: "Unauthorized. Please log in again.",
-          severity: "error",
-        })
-      } else {
-        setSnackbar({
-          open: true,
-          message: "Failed to update profile. Please try again.",
-          severity: "error",
-        })
-      }
+    } catch (err) {
+      console.error('Failed to send OTP:', err)
+    } finally {
+      setIsSendingOTP(false)
     }
   }
 
@@ -620,44 +578,23 @@ export function ProfileModal({ open, onOpenChange }) {
       return
     }
 
-    setIsChangingPassword(true)
+    // Instead of updating password here, trigger OTP modal
+    setShowOTPModal(true)
     setPasswordError("")
-
+    // Send the OTP as soon as the modal opens
+    setIsSendingOTP(true)
     try {
-      const token = localStorage.getItem("token")
-      if (!token) {
-        setPasswordError("You are not logged in")
-        setIsChangingPassword(false)
-        return
+      const response = await axios.get(`http://localhost:8080/email/send-email/${user.email}`)
+      // Log backend message for confirmation
+      if (response && response.data) {
+        console.log('OTP email response:', response.data)
+      } else {
+        console.log('OTP email sent, but no message returned from backend.')
       }
-
-      // Use regular axios for backend API calls
-      const response = await axios.put(
-        `${API_BASE_URL}/user/update-password`,
-        { newPassword },
-        { headers: { Authorization: `Bearer ${token}` } },
-      )
-
-      if (response.status === 200) {
-        // Password updated successfully
-        setShowNewPasswordModal(false)
-        setNewPassword("")
-        setConfirmNewPassword("")
-        setPasswordStrength(0)
-        setPasswordErrors([])
-
-        // Show success message
-        setSnackbar({
-          open: true,
-          message: "Password updated successfully",
-          severity: "success",
-        })
-      }
-    } catch (error) {
-      console.error("Error updating password:", error)
-      setPasswordError("Failed to update password. Please try again.")
+    } catch (err) {
+      console.error('Failed to send OTP:', err)
     } finally {
-      setIsChangingPassword(false)
+      setIsSendingOTP(false)
     }
   }
 
@@ -1238,6 +1175,201 @@ export function ProfileModal({ open, onOpenChange }) {
                   </button>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* OTP Modal for password change */}
+      {showOTPModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+        >
+          <div
+            className="bg-white rounded-md shadow-lg w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-300 relative"
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            {/* Modal header */}
+            <div className="bg-slate-900 h-12 relative flex items-center justify-between px-4">
+              <div className="text-white font-medium">Enter OTP</div>
+              <button
+                onClick={() => {
+                  setShowOTPModal(false)
+                  setIsResendingOTP(false)
+                }}
+                className="text-white hover:text-gray-300"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            {/* Modal content */}
+            <div className="p-6 min-h-[200px] flex flex-col justify-center">
+              {isSendingOTP ? (
+                <div className="flex flex-col items-center justify-center h-full py-8">
+                  <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                  <div className="text-gray-700 text-center font-medium">We are sending you an OTP to your email...</div>
+                </div>
+              ) : (
+                <>
+                <p className="text-gray-600 mb-4">
+                  Please enter the 6-digit OTP sent to your email <span className="font-semibold">{user.email}</span>.
+                </p>
+                {otpError && (
+                  <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-md">{otpError}</div>
+                )}
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault()
+                    setOtpError("")
+                    if (!otpValue || otpValue.length !== 6) {
+                      setOtpError("Please enter the 6-digit OTP.")
+                      return
+                    }
+                    try {
+                      const response = await axios.get(
+                        `http://localhost:8080/email/validate-otp`,
+                        { params: { email: user.email, OTP: otpValue } }
+                      )
+                      if (response.data === true) {
+                        setShowOTPModal(false)
+                        if (pendingProfileUpdate) {
+                          // Submit profile update
+                          try {
+                            const token = localStorage.getItem("token")
+                            if (!token) {
+                              setSnackbar({ open: true, message: "No authentication token found", severity: "error" })
+                              return
+                            }
+                            const resp = await axios.put(`${API_BASE_URL}/user/update`, pendingProfileUpdate, {
+                              headers: { Authorization: `Bearer ${token}` },
+                            })
+                            if (resp.status === 200) {
+                              setEditMode(false)
+                              setSnackbar({
+                                open: true,
+                                message: "Profile updated successfully",
+                                severity: "success",
+                              })
+                              setPendingProfileUpdate(null)
+                            }
+                          } catch (error) {
+                            setSnackbar({
+                              open: true,
+                              message: "Failed to update profile. Please try again.",
+                              severity: "error",
+                            })
+                          }
+                        } else {
+                          setIsChangingPassword(true)
+                          setPasswordError("")
+                          try {
+                            const token = localStorage.getItem("token")
+                            if (!token) {
+                              setPasswordError("You are not logged in")
+                              setIsChangingPassword(false)
+                              return
+                            }
+                            const resp = await axios.put(
+                              `${API_BASE_URL}/user/update-password`,
+                              { newPassword },
+                              { headers: { Authorization: `Bearer ${token}` } },
+                            )
+                            if (resp.status === 200) {
+                              setShowNewPasswordModal(false)
+                              setNewPassword("")
+                              setConfirmNewPassword("")
+                              setPasswordStrength(0)
+                              setPasswordErrors([])
+                              setSnackbar({
+                                open: true,
+                                message: "Password updated successfully",
+                                severity: "success",
+                              })
+                            }
+                          } catch (error) {
+                            setPasswordError("Failed to update password. Please try again.")
+                          } finally {
+                            setIsChangingPassword(false)
+                          }
+                        }
+                      } else {
+                        setOtpError("Invalid OTP. Please try again.")
+                      }
+                    } catch (err) {
+                      setOtpError("Failed to validate OTP. Please try again.")
+                    }
+                  }}
+                  className="space-y-4"
+                >
+                  <div className="space-y-2">
+                    <label htmlFor="otp" className="text-sm font-medium text-gray-700">
+                      OTP
+                    </label>
+                    <input
+                      id="otp"
+                      type="text"
+                      value={otpValue}
+                      onChange={(e) => setOtpValue(e.target.value.replace(/[^0-9]/g, "").slice(0, 6))}
+                      className="w-full h-11 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-center tracking-widest text-lg"
+                      placeholder="------"
+                      maxLength={6}
+                      autoFocus
+                    />
+                  </div>
+                  <div className="flex items-center justify-between mt-2">
+                    <div className="text-sm text-gray-500">
+                      {otpTimer > 0 ? (
+                        <>Resend OTP in <span className="font-semibold">{otpTimer}s</span></>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            setIsResendingOTP(true)
+                            setIsSendingOTP(true)
+                            setOtpError("")
+                            setOtpValue("")
+                            try {
+                              const response = await axios.get(`http://localhost:8080/email/send-email/${user.email}`)
+                              // Log backend message for confirmation
+                              if (response && response.data) {
+                                console.log('OTP email response:', response.data)
+                              } else {
+                                console.log('OTP email sent, but no message returned from backend.')
+                              }
+                            } catch (err) {
+                              // Optionally handle resend error
+                            }
+                            setIsResendingOTP(false)
+                            setIsSendingOTP(false)
+                            setOtpTimer(60)
+                            if (otpTimerRef.current) clearInterval(otpTimerRef.current)
+                            otpTimerRef.current = setInterval(() => {
+                              setOtpTimer((prev) => {
+                                if (prev <= 1) {
+                                  clearInterval(otpTimerRef.current)
+                                  return 0
+                                }
+                                return prev - 1
+                              })
+                            }, 1000)
+                          }}
+                          disabled={isResendingOTP}
+                          className="text-blue-600 hover:underline disabled:opacity-60"
+                        >
+                          {isResendingOTP ? "Resending..." : "Resend OTP"}
+                        </button>
+                      )}
+                    </div>
+                    <button
+                      type="submit"
+                      className="px-4 py-2 bg-black text-white rounded-md hover:bg-gray-800 disabled:opacity-70"
+                      disabled={otpValue.length !== 6}
+                    >
+                      Verify
+                    </button>
+                  </div>
+                </form>
+                </>
+              )}
             </div>
           </div>
         </div>

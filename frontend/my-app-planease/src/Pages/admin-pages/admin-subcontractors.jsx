@@ -1,6 +1,11 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContentText from '@mui/material/DialogContentText';
 import Divider from "@mui/material/Divider"
 import Navbar from "../../Components/Navbar"
 import Typography from "@mui/material/Typography"
@@ -8,7 +13,7 @@ import AddIcon from "@mui/icons-material/Add"
 import CloseIcon from "@mui/icons-material/Close"
 import EditIcon from "@mui/icons-material/Edit"
 import CloudUploadIcon from "@mui/icons-material/CloudUpload"
-import AdminSideBar from "./admin-sidebar"
+import AdminSideBar from '../../Components/admin-sidebar.jsx';
 import "../../index.css"
 import {
   Box,
@@ -29,10 +34,26 @@ import {
   Select,
   MenuItem,
   InputAdornment,
+  Chip,
 } from "@mui/material"
 import { useTheme } from "@mui/material/styles"
 import axios from "axios"
 import { Visibility, VisibilityOff, KeyboardArrowDown } from "@mui/icons-material"
+import RestaurantIcon from "@mui/icons-material/Restaurant"
+import CameraAltIcon from "@mui/icons-material/CameraAlt"
+import VideocamIcon from "@mui/icons-material/Videocam"
+import TheaterComedyIcon from "@mui/icons-material/TheaterComedy"
+import MusicNoteIcon from "@mui/icons-material/MusicNote"
+import LocationOnIcon from "@mui/icons-material/LocationOn"
+import DirectionsCarIcon from "@mui/icons-material/DirectionsCar"
+import LocalFloristIcon from "@mui/icons-material/LocalFlorist"
+import SettingsIcon from "@mui/icons-material/Settings"
+import EventIcon from "@mui/icons-material/Event"
+import SecurityIcon from "@mui/icons-material/Security"
+import CleaningServicesIcon from "@mui/icons-material/CleaningServices"
+import GroupsIcon from "@mui/icons-material/Groups"
+import DesignServicesIcon from "@mui/icons-material/DesignServices"
+import MicIcon from "@mui/icons-material/Mic"
 
 // API service functions
 const API_BASE_URL = "http://localhost:8080"
@@ -81,6 +102,10 @@ const AdminSubContractors = () => {
   const [subcontractors, setSubcontractors] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+
+  // State for category counts
+  const [categoryCounts, setCategoryCounts] = useState(null)
+  const [loadingCategoryCounts, setLoadingCategoryCounts] = useState(true)
 
   // Form fields for new subcontractor
   const [firstname, setFirstname] = useState("")
@@ -134,6 +159,11 @@ const AdminSubContractors = () => {
     severity: "success",
   })
 
+  const [openModal, setOpenModal] = useState(false)
+  const [selectedSubcontractor, setSelectedSubcontractor] = useState(null)
+  const [loadingSubcontractorDetails, setLoadingSubcontractorDetails] = useState(false)
+  const [openDeleteConfirmation, setOpenDeleteConfirmation] = useState(false)
+
   const handleOpen = () => setOpen(true)
   const handleClose = () => {
     setOpen(false)
@@ -147,6 +177,7 @@ const AdminSubContractors = () => {
   // Fetch subcontractors on component mount
   useEffect(() => {
     fetchSubcontractors()
+    fetchCategoryCounts()
     fetchCountries()
     fetchRegions()
   }, [])
@@ -175,6 +206,7 @@ const AdminSubContractors = () => {
           Authorization: `Bearer ${token}`,
         },
       })
+      console.log(response.data)
       setSubcontractors(response.data || [])
       setError(null)
     } catch (err) {
@@ -183,6 +215,27 @@ const AdminSubContractors = () => {
       setSubcontractors([])
     } finally {
       setLoading(false)
+    }
+  }
+
+  // Fetch category counts from backend
+  const fetchCategoryCounts = async () => {
+    setLoadingCategoryCounts(true)
+    try {
+      const token = getAuthToken()
+      const response = await axios.get(`${API_BASE_URL}/subcontractor/category-counts`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+      console.log('Category counts:', response.data)
+      setCategoryCounts(response.data || [])
+    } catch (err) {
+      console.error("Error fetching category counts:", err)
+      // Fallback to client-side counting if API fails
+      setCategoryCounts(null)
+    } finally {
+      setLoadingCategoryCounts(false)
     }
   }
 
@@ -446,7 +499,7 @@ const AdminSubContractors = () => {
         cityAndMul: selectedCityMunicipalityName,
         barangay: selectedBarangayName,
         role: "SubContractor",
-        profilePicture: null,
+        profilePicture: "https://example.com/profile-pic.jpg",
         isGoogle: false,
         isFacebook: false,
       }
@@ -567,6 +620,9 @@ const AdminSubContractors = () => {
 
       // Update the subcontractors list
       setSubcontractors((prev) => prev.filter((subcontractor) => subcontractor.subcontractor_Id !== id))
+      
+      // Update the category counts after successful deletion
+      fetchCategoryCounts()
 
       setSnackbar({
         open: true,
@@ -605,51 +661,308 @@ const AdminSubContractors = () => {
     setSelectedImage((prev) => prev.filter((_, i) => i !== indexToRemove))
   }
 
+  // Group subcontractors by category for summary
+  const getSubcontractorsByCategory = () => {
+    // If we have category counts from the API, use those
+    if (categoryCounts) {
+      const categories = {};
+      
+      // Transform the API response to the format we need
+      categoryCounts.forEach(item => {
+        const category = item.category || 'Other';
+        categories[category] = Number(item.count);
+      });
+      
+      return categories;
+    }
+    
+    // Fallback to client-side counting if API data is not available
+    const categories = {};
+    
+    // Initialize with total count
+    categories['total'] = subcontractors.length;
+    
+    // Count by service category
+    subcontractors.forEach(subcontractor => {
+      const category = subcontractor.serviceCategory || 'Other';
+      if (!categories[category]) {
+        categories[category] = 0;
+      }
+      categories[category]++;
+    });
+    
+    return categories;
+  };
+
+  const subcontractorCategories = getSubcontractorsByCategory();
+  
+  // Get icon for each category
+  const getCategoryIcon = (category) => {
+    // Convert to lowercase and handle plurals by removing trailing 's'
+    const normalizedCategory = category.toLowerCase().replace(/s$/, '');
+    
+    switch(normalizedCategory) {
+      case 'food & catering':
+      case 'catering':
+      case 'food':
+        return <RestaurantIcon fontSize="large" />;
+      case 'photography':
+      case 'photo':
+        return <CameraAltIcon fontSize="large" />;
+      case 'videography':
+      case 'video':
+        return <VideocamIcon fontSize="large" />;
+      case 'decoration & styling':
+      case 'decoration':
+      case 'decorator':
+      case 'design':
+        return <DesignServicesIcon fontSize="large" />;
+      case 'transportation':
+      case 'car rental':
+      case 'car':
+        return <DirectionsCarIcon fontSize="large" />;
+      case 'venue & location':
+      case 'venue':
+      case 'location':
+        return <LocationOnIcon fontSize="large" />;
+      case 'entertainment & music':
+      case 'entertainment':
+      case 'music':
+        return <MusicNoteIcon fontSize="large" />;
+      case 'floral arrangements':
+      case 'floral':
+      case 'flower':
+        return <LocalFloristIcon fontSize="large" />;
+      case 'audio & visual equipment':
+      case 'audio':
+      case 'equipment':
+        return <SettingsIcon fontSize="large" />;
+      case 'event planning & coordination':
+      case 'event planning':
+      case 'event':
+      case 'planning':
+        return <EventIcon fontSize="large" />;
+      case 'security services':
+      case 'security':
+        return <SecurityIcon fontSize="large" />;
+      case 'cleaning services':
+      case 'cleaning':
+        return <CleaningServicesIcon fontSize="large" />;
+      case 'hosting':
+      case 'host':
+        return <MicIcon fontSize="large" />;
+      case 'total':
+        return <GroupsIcon fontSize="large" />;
+      default:
+        return <SettingsIcon fontSize="large" />;
+    }
+  };
+
+  // For pagination
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('All Categories');
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  // Filter subcontractors based on search and category
+  const filteredSubcontractors = subcontractors.filter(subcontractor => {
+    const nameMatch = subcontractor.user && 
+      `${subcontractor.user.firstname} ${subcontractor.user.lastname}`
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase());
+    
+    const categoryMatch = selectedCategory === 'All Categories' || 
+      subcontractor.serviceCategory === selectedCategory;
+    
+    return nameMatch && categoryMatch;
+  });
+
+  // Get all unique categories for dropdown
+  const allCategories = ['All Categories', ...new Set(subcontractors
+    .map(s => s.serviceCategory)
+    .filter(Boolean))];
+
+  // Handle opening and closing the subcontractor details modal
+  const handleOpenModal = async (subcontractorId) => {
+    setLoadingSubcontractorDetails(true)
+    setOpenModal(true)
+    
+    try {
+      const response = await axios.get(`${API_BASE_URL}/subcontractor/${subcontractorId}`)
+      setSelectedSubcontractor(response.data)
+    } catch (error) {
+      console.error("Error fetching subcontractor details:", error)
+    } finally {
+      setLoadingSubcontractorDetails(false)
+    }
+  }
+  
+  const handleCloseModal = () => {
+    setOpenModal(false)
+    setSelectedSubcontractor(null)
+  };
+
+  const handleOpenDeleteConfirmation = () => {
+    setOpenDeleteConfirmation(true)
+  };
+  
+  const handleCloseDeleteConfirmation = () => {
+    setOpenDeleteConfirmation(false)
+  };
+
   return (
-    <div className="h-screen grid grid-rows-[auto_1fr]">
+    <div className="min-h-screen flex flex-col">
       <Navbar />
-      <div className="grid lg:grid-cols-[1fr_3fr]">
-        <div className="shadow hidden lg:block p-5">
+      <div className="flex flex-1 overflow-hidden">
+        <aside className="hidden md:block w-64 border-r bg-white">
           <AdminSideBar />
-        </div>
-        <div className="flex flex-col direct rounded-lg gap-4 bg-gray-100 md:px-10 md:py-10">
-          <div className="flex items-center bg-white p-5 md:p-10 shadow-lg">
-            <img
-              src="https://s3-alpha-sig.figma.com/img/77cd/766b/225481949bb96c1ee92e2969c13f92f6?Expires=1745193600&Key-Pair-Id=APKAQ4GOSFWCW27IBOMQ&Signature=MgA~u1aSsMJWwuIpk-E5xBEOi8XPMninH2z6y2KAx~Azfo37d6ks4SqAolAPot7xsHEQShMTQvRSvv2ClxROmBPnuFzb4JiO7J3woNLPb897H5ndYRF-DWZM8Sa0VAJ6JXOYGEW~T9MVAM0ekDuikPDxbYMydG2BNtvD9lJozuraR2NtjgqszlfemHOanssPqdWEKzriBQjI0JGLu8ULQat5G6sXUQ-wlgwFUOk9L2Cs0ACDND5UVeaOAfrTT8Jh~n6hK9XQ~guO6IMNo47QZ-aR8g-7dP0uSWZmkm7WAsrhh3BYw0LzMYlTzkrGNyWjFd31cLCysbnYIrGUQ9FcMQ__"
-              alt="Profile"
-              className="w-20 h-20 rounded-full object-cover"
-            />
-            <div className="ml-4">
-              <h2 className="text-lg font-semibold">James Wilson</h2>
-              <p className="text-gray-500">ADMIN</p>
-            </div>
-          </div>
+        </aside>
 
-          {/* Subcontractors Section */}
-          <div className="flex flex-col bg-white rounded-lg shadow-lg p-4 lg:p-15 gap-4">
-            <div className="flex flex-row w-full justify-between items-center md:p-4">
-              <h1 className="md:text-xl font-poppins">Subcontractors</h1>
-              <div className="flex items-center gap-2">
-                <div className="hidden sm:flex items-center">
-                  <button
-                    className="rounded-xl font-poppins text-white bg-blue-500 md:text-lg px-4 py-1 hover:bg-blue-600 transition duration-200"
-                    onClick={handleOpen}
-                  >
-                    Add Subcontractor
-                  </button>
-                </div>
-                <div className="block sm:hidden">
-                  <AddIcon
-                    className="bg-blue-500 text-white rounded-xl p-2"
-                    sx={{ fontSize: 40 }}
-                    onClick={handleOpen}
-                  />
-                </div>
+        <main className="flex-1 p-4 sm:p-6 md:p-10 bg-gray-50 overflow-auto">
+          <h2 className="text-2xl font-bold mb-6">Create Account for Subcontractors</h2>
+          
+          {/* Manage Subcontractors Section */}
+          <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+            <div className="flex justify-between items-center mb-4">
+              <div>
+                <h3 className="text-xl font-semibold">Manage Your Subcontractors</h3>
+                <p className="text-sm text-gray-500">Register new vendors and manage existing ones.</p>
               </div>
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                sx={{
+                  bgcolor: '#FFA500',
+                  '&:hover': { bgcolor: '#FF8C00' },
+                  borderRadius: '8px',
+                  boxShadow: 'none',
+                  fontWeight: 'bold'
+                }}
+                onClick={handleOpen}
+              >
+                Add Subcontractor
+              </Button>
             </div>
-            <Divider />
-
-            {/* Subcontractors Grid */}
+            
+            {/* Subcontractor Category Cards */}
+            {loading || loadingCategoryCounts ? (
+              <Box display="flex" justifyContent="center" alignItems="center" p={4}>
+                <CircularProgress />
+              </Box>
+            ) : (
+              <Grid container spacing={3} sx={{ mt: 2 }}>
+                {/* Total subcontractors card */}
+                <Grid item xs={12} sm={6} md={4} lg={4}>
+                  <Card 
+                    sx={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      borderLeft: '6px solid #3498db',
+                      height: '100%'
+                    }}
+                  >
+                    <Box sx={{ p: 2, display: 'flex', alignItems: 'center', width: '100%' }}>
+                      <Avatar sx={{ bgcolor: '#E3F2FD', color: '#3498db', width: 56, height: 56, mr: 2 }}>
+                        {getCategoryIcon('total')}
+                      </Avatar>
+                      <Box>
+                        <Typography variant="h4" fontWeight="bold">
+                          {subcontractorCategories['total'] || 0}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          Total subcontractors
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Card>
+                </Grid>
+                
+                {/* Category cards - display top 5 categories */}
+                {Object.entries(subcontractorCategories)
+                  .filter(([category]) => category !== 'total')
+                  .sort(([, countA], [, countB]) => countB - countA)
+                  .slice(0, 5)
+                  .map(([category, count]) => (
+                    <Grid item xs={12} sm={6} md={4} lg={4} key={category}>
+                      <Card 
+                        sx={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          borderLeft: '6px solid #FFA500',
+                          height: '100%'
+                        }}
+                      >
+                        <Box sx={{ p: 2, display: 'flex', alignItems: 'center', width: '100%' }}>
+                          <Avatar sx={{ bgcolor: '#FFF3E0', color: '#FFA500', width: 56, height: 56, mr: 2 }}>
+                            {getCategoryIcon(category)}
+                          </Avatar>
+                          <Box>
+                            <Typography variant="h4" fontWeight="bold">
+                              {count}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              {category}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </Card>
+                    </Grid>
+                  ))
+                }
+              </Grid>
+            )}
+          </div>
+          
+          {/* Subcontractors List Section */}
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <h3 className="text-xl font-semibold mb-4">List of subcontractors</h3>
+            
+            {/* Search and Filter */}
+            <Box display="flex" justifyContent="space-between" mb={3}>
+              <TextField
+                placeholder="Search..."
+                variant="outlined"
+                size="small"
+                sx={{ width: 250 }}
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setPage(0);
+                }}
+                InputProps={{
+                  sx: { borderRadius: '4px', bgcolor: '#f5f5f5' }
+                }}
+              />
+              
+              <FormControl size="small" sx={{ width: 180 }}>
+                <Select
+                  value={selectedCategory}
+                  onChange={(e) => {
+                    setSelectedCategory(e.target.value);
+                    setPage(0);
+                  }}
+                  displayEmpty
+                  sx={{ borderRadius: '4px' }}
+                >
+                  {allCategories.map((category) => (
+                    <MenuItem key={category} value={category}>
+                      {category}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Box>
+            
+            {/* Subcontractors Table */}
             {loading ? (
               <Box display="flex" justifyContent="center" alignItems="center" p={4}>
                 <CircularProgress />
@@ -659,132 +972,250 @@ const AdminSubContractors = () => {
                 <Alert severity="error">{error}</Alert>
               </Box>
             ) : (
-              <Grid container spacing={3} className="p-4">
-                {subcontractors.length === 0 ? (
-                  <Box width="100%" textAlign="center" p={4}>
-                    <Typography variant="body1" color="text.secondary">
-                      No subcontractors found. Add your first subcontractor!
-                    </Typography>
-                  </Box>
-                ) : (
-                  subcontractors.map((subcontractor) => (
-                    <Grid item xs={12} sm={6} md={4} key={subcontractor.subcontractor_Id}>
-                      <Card
-                        sx={{
-                          height: "100%",
-                          display: "flex",
-                          flexDirection: "column",
-                          transition: "transform 0.2s, box-shadow 0.2s",
-                          "&:hover": {
-                            transform: "translateY(-5px)",
-                            boxShadow: "0 10px 20px rgba(0,0,0,0.1)",
-                          },
-                        }}
+              <>
+                <div style={{ overflowX: 'auto' }}>
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Name
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Category
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Action
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {filteredSubcontractors
+                        .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                        .map((subcontractor) => (
+                          <tr key={subcontractor.subcontractor_Id}>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center">
+                                <div className="flex-shrink-0 h-10 w-10">
+                                  <Avatar 
+                                    src={subcontractor.user?.profilePicture || "/placeholder.svg?height=40&width=40"}
+                                    alt={subcontractor.user ? `${subcontractor.user.firstname} ${subcontractor.user.lastname}` : "Subcontractor"}
+                                  />
+                                </div>
+                                <div className="ml-4">
+                                  <div className="text-sm font-medium text-gray-900">
+                                    {subcontractor.user
+                                      ? `${subcontractor.user.firstname} ${subcontractor.user.lastname}`
+                                      : "No Name"}
+                                  </div>
+                                  <div className="text-sm text-gray-500">
+                                    {subcontractor.user?.email || "No email"}
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center">
+                                <div className="mr-2 flex-shrink-0">
+                                  {getCategoryIcon(subcontractor.subcontractor_serviceCategory || 'Other')}
+                                </div>
+                                <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                  {subcontractor.subcontractor_serviceCategory || "Other"}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                              <Button
+                                variant="outlined"
+                                size="small"
+                                color="primary"
+                                onClick={() => handleOpenModal(subcontractor.subcontractor_Id)}
+                              >
+                                View Profile
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                </div>
+                
+                {/* Pagination */}
+                <Box display="flex" justifyContent="center" mt={3}>
+                  <div className="flex items-center space-x-1">
+                    <button 
+                      className="px-3 py-1 rounded-md bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50"
+                      disabled={page === 0}
+                      onClick={() => setPage(page - 1)}
+                    >
+                      &lt;
+                    </button>
+                    
+                    {[...Array(Math.ceil(filteredSubcontractors.length / rowsPerPage)).keys()].map(number => (
+                      <button
+                        key={number}
+                        className={`px-3 py-1 rounded-md ${page === number ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                        onClick={() => setPage(number)}
                       >
-                        <CardContent
-                          sx={{
-                            flexGrow: 1,
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: "center",
-                            padding: 3,
-                            position: "relative",
-                          }}
-                        >
-                          <IconButton
-                            size="small"
-                            sx={{
-                              position: "absolute",
-                              top: 8,
-                              right: 8,
-                              backgroundColor: "rgba(255,255,255,0.8)",
-                              "&:hover": { backgroundColor: "rgba(255,255,255,1)" },
-                            }}
-                            onClick={() => handleDeleteSubcontractor(subcontractor.subcontractor_Id)}
-                          >
-                            <CloseIcon fontSize="small" />
-                          </IconButton>
-
-                          <Avatar
-                            src={subcontractor.user.profilePicture || "/placeholder.svg?height=200&width=200"}
-                            alt={`${subcontractor.user.firstname} ${subcontractor.user.lastname}`}
-                            sx={{ width: 100, height: 100, mb: 2 }}
-                          />
-                          <Typography variant="h6" component="h3" gutterBottom>
-                            {subcontractor.user.firstname} {subcontractor.user.lastname}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary" gutterBottom>
-                            {subcontractor.service}
-                          </Typography>
-                          {/* Display service category if available */}
-                          {subcontractor.serviceCategory && (
-                            <Typography variant="caption" color="primary" gutterBottom sx={{ fontWeight: 500 }}>
-                              {subcontractor.serviceCategory}
-                            </Typography>
-                          )}
-                          {/* Display service price if available */}
-                          {subcontractor.servicePrice && (
-                            <Typography variant="h6" color="success.main" gutterBottom sx={{ fontWeight: 600 }}>
-                              {formatPrice(subcontractor.servicePrice)}
-                            </Typography>
-                          )}
-                          <Typography variant="body2" color="text.secondary" gutterBottom>
-                            {subcontractor.user.email}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary" gutterBottom>
-                            {subcontractor.user.phoneNumber}
-                          </Typography>
-                          <Button
-                            variant="outlined"
-                            size="small"
-                            sx={{ mt: 2 }}
-                            onClick={() => (window.location.href = `/subcontractor/${subcontractor.subcontractor_Id}`)}
-                          >
-                            View Profile
-                          </Button>
-                        </CardContent>
-                      </Card>
-                    </Grid>
-                  ))
-                )}
-              </Grid>
-            )}
-
-            <Divider />
-            <div className="md:p-4">
-              <Box display="flex" justifyContent="space-between" alignItems="center">
-                <Typography variant="h6" fontWeight="medium" className="font-poppins md:text-lg">
-                  About us
-                </Typography>
-                <IconButton size="small" onClick={() => setIsEditingAbout((prev) => !prev)} sx={{ color: "gray" }}>
-                  <EditIcon sx={{ color: "grey-600" }} />
-                </IconButton>
-              </Box>
-
-              {!isEditingAbout ? (
-                <Typography className="font-poppins md:text-md text-gray-600 whitespace-pre-line">
-                  {aboutUsText}
-                </Typography>
-              ) : (
-                <Box mt={2}>
-                  <TextField
-                    multiline
-                    rows={4}
-                    fullWidth
-                    value={aboutUsText}
-                    onChange={(e) => setAboutUsText(e.target.value)}
-                  />
-                  <Box display="flex" justifyContent="flex-end" mt={1}>
-                    <Button variant="contained" size="small" onClick={() => setIsEditingAbout(false)}>
-                      Save
-                    </Button>
-                  </Box>
+                        {number + 1}
+                      </button>
+                    ))}
+                    
+                    <button 
+                      className="px-3 py-1 rounded-md bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50"
+                      disabled={page >= Math.ceil(filteredSubcontractors.length / rowsPerPage) - 1}
+                      onClick={() => setPage(page + 1)}
+                    >
+                      &gt;
+                    </button>
+                  </div>
                 </Box>
-              )}
-            </div>
+              </>
+            )}
           </div>
-        </div>
+        </main>
       </div>
+
+      {/* Subcontractor Details Modal */}
+      <Dialog
+        open={openModal}
+        onClose={handleCloseModal}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{ bgcolor: '#f5f5f5', pb: 1 }}>
+          <Typography variant="h6" component="div" fontWeight="bold">
+            Subcontractor Details
+          </Typography>
+        </DialogTitle>
+        <DialogContent dividers>
+          {loadingSubcontractorDetails ? (
+            <Box display="flex" justifyContent="center" alignItems="center" p={4}>
+              <CircularProgress />
+            </Box>
+          ) : selectedSubcontractor ? (
+            <Box>
+              <Box display="flex" alignItems="center" mb={3}>
+                <Avatar
+                  src={selectedSubcontractor.user?.profilePicture || "/placeholder.svg"}
+                  alt={selectedSubcontractor.user ? `${selectedSubcontractor.user.firstname} ${selectedSubcontractor.user.lastname}` : "Subcontractor"}
+                  sx={{ width: 80, height: 80, mr: 2 }}
+                />
+                <Box>
+                  <Typography variant="h6">
+                    {selectedSubcontractor.user
+                      ? `${selectedSubcontractor.user.firstname} ${selectedSubcontractor.user.lastname}`
+                      : "No Name"}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {selectedSubcontractor.user?.email || "No email"}
+                  </Typography>
+                  <Chip 
+                    icon={getCategoryIcon(selectedSubcontractor.subcontractor_serviceCategory || 'Other')}
+                    label={selectedSubcontractor.subcontractor_serviceCategory || "Other"}
+                    variant="outlined"
+                    size="small"
+                    sx={{ mt: 1 }}
+                  />
+                </Box>
+              </Box>
+              
+              <Divider sx={{ my: 2 }} />
+              
+              <Box mb={2}>
+                <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                  Business Name
+                </Typography>
+                <Typography variant="body1">
+                  {selectedSubcontractor.subcontractor_serviceName || "Not specified"}
+                </Typography>
+              </Box>
+              
+              <Box mb={2}>
+                <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                  Description
+                </Typography>
+                <Typography variant="body1">
+                  {selectedSubcontractor.subcontractor_description || "No description available"}
+                </Typography>
+              </Box>
+              
+              <Box mb={2}>
+                <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                  Base Price
+                </Typography>
+                <Typography variant="body1" color="primary" fontWeight="medium">
+                  ₱{selectedSubcontractor.subcontractor_service_price?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || "Not specified"}
+                </Typography>
+              </Box>
+            </Box>
+          ) : (
+            <Typography variant="body1" color="error">
+              Failed to load subcontractor details.
+            </Typography>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ display: 'flex', justifyContent: 'space-between', px: 3, pb: 2 }}>
+          <Button 
+            variant="contained" 
+            color="error" 
+            onClick={handleOpenDeleteConfirmation}
+            startIcon={<CloseIcon />}
+            disabled={loadingSubcontractorDetails || !selectedSubcontractor}
+          >
+            Delete Subcontractor
+          </Button>
+          <Button 
+            variant="outlined" 
+            onClick={handleCloseModal} 
+            color="primary"
+          >
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={openDeleteConfirmation}
+        onClose={handleCloseDeleteConfirmation}
+        aria-labelledby="delete-dialog-title"
+        aria-describedby="delete-dialog-description"
+      >
+        <DialogTitle id="delete-dialog-title" sx={{ bgcolor: '#f5f5f5' }}>
+          {"Confirm Delete"}
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="delete-dialog-description">
+            Are you sure you want to delete this subcontractor? This action cannot be undone.
+            {selectedSubcontractor && (
+              <Typography variant="subtitle2" color="error" sx={{ mt: 1, fontWeight: 'bold' }}>
+                {selectedSubcontractor.user
+                  ? `${selectedSubcontractor.user.firstname} ${selectedSubcontractor.user.lastname}`
+                  : "This subcontractor"} will be permanently removed as a subcontractor.
+              </Typography>
+            )}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDeleteConfirmation} color="primary">
+            Cancel
+          </Button>
+          <Button 
+            onClick={() => {
+              if (selectedSubcontractor) {
+                handleDeleteSubcontractor(selectedSubcontractor.subcontractor_Id);
+                handleCloseDeleteConfirmation();
+                handleCloseModal();
+              }
+            }} 
+            color="error" 
+            variant="contained" 
+            autoFocus
+          >
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Add Subcontractor Modal */}
       <Modal open={open} onClose={handleClose}>

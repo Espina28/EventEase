@@ -27,19 +27,20 @@
   padding: 10px 0;
   color: #666;
   font-size: 15px;
-  cursor: pointer;
+  cursor: default;
 }
 
 .side-panel li a {
   text-decoration: none;
+  cursor: default;
   color: inherit;
   display: block;
-  transition: color 0.3s;
+  transition: color 0.3s; 
 }
 
-.side-panel li a:hover {
+/* .side-panel li a:hover {
   color: #4A63E7;
-}
+} */
 
 .side-panel li.active {
   color: #4A63E7;

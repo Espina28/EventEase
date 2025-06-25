@@ -1,7 +1,7 @@
 package com.Project.Backend.Controller;
 
 import com.Project.Backend.DTO.UnavailableDatesDTO;
-import com.Project.Backend.Entity.UnavailableDates;
+import com.Project.Backend.Entity.UnavailableDatesEntity;
 import com.Project.Backend.Service.UnavailableDatesService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -23,16 +23,16 @@ public class UnavailableDatesController {
 
     // Get all unavailable dates for a subcontractor
     @GetMapping
-    public ResponseEntity<List<UnavailableDates>> getUnavailableDates(@RequestParam String email) {
-        List<UnavailableDates> unavailableDates = unavailableDatesService.getUnavailableDatesByEmail(email);
+    public ResponseEntity<List<UnavailableDatesEntity>> getUnavailableDates(@RequestParam String email) {
+        List<UnavailableDatesEntity> unavailableDates = unavailableDatesService.getUnavailableDatesByEmail(email);
         return ResponseEntity.ok(unavailableDates);
     }
-    
+
     // Add a new unavailable date
     @PostMapping()
     public ResponseEntity<?> addUnavailableDate(@RequestBody UnavailableDatesDTO dto) {
         try {
-            UnavailableDates savedDate = unavailableDatesService.addUnavailableDate(
+            UnavailableDatesEntity savedDate = unavailableDatesService.addUnavailableDate(
                 dto.getEmail(), 
                 dto.getDate(), 
                 dto.getReason()
@@ -52,7 +52,7 @@ public class UnavailableDatesController {
             @RequestBody List<Date> dates,
             @RequestParam(required = false, defaultValue = "") String reason) {
         try {
-            List<UnavailableDates> savedDates = unavailableDatesService.addMultipleUnavailableDates(email, dates, reason);
+            List<UnavailableDatesEntity> savedDates = unavailableDatesService.addMultipleUnavailableDates(email, dates, reason);
             return ResponseEntity.ok(savedDates);
         } catch (RuntimeException e) {
             Map<String, String> errorResponse = new HashMap<>();
@@ -66,13 +66,13 @@ public class UnavailableDatesController {
     public ResponseEntity<?> deleteUnavailableDate(@PathVariable String id) {
         try {
             // Check if the date exists first
-            UnavailableDates date = unavailableDatesService.getUnavailableDateById(Integer.parseInt(id));
+            UnavailableDatesEntity date = unavailableDatesService.getUnavailableDateById(Integer.parseInt(id));
             if (date == null) {
                 return ResponseEntity.notFound().build();
             }
             
             unavailableDatesService.deleteUnavailableDate(Integer.parseInt(id));
-            return ResponseEntity.noContent().build();
+            return ResponseEntity.ok().build();
         } catch (Exception e) {
             Map<String, String> errorResponse = new HashMap<>();
             errorResponse.put("error", e.getMessage());

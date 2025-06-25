@@ -1,8 +1,6 @@
 package com.Project.Backend.Entity;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonIdentityInfo;
-import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import jakarta.persistence.*;
 
 import java.sql.Date;
@@ -11,7 +9,7 @@ import java.sql.Timestamp;
 @Entity
 @Table(name = "Unavailable_Dates")
 //@JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "unavailableDate_id")
-public class UnavailableDates {
+public class UnavailableDatesEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -22,8 +20,8 @@ public class UnavailableDates {
     private String reason;
     private Timestamp created_at;
 
-    @ManyToOne
-    @JoinColumn(name = "subcontractor_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "subcontractor_id", nullable = true)
     @JsonBackReference(value = "subcontractor-unavailable-dates")
     private SubcontractorEntity subcontractor;
 

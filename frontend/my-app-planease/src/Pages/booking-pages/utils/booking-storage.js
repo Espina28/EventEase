@@ -44,7 +44,11 @@ export const getEventDetails = () => {
 // Services Data functions
 export const saveServicesData = (data) => {
   const existing = getServicesData()
-  const updated = { ...existing, ...data }
+  let updated = null;
+  if(existing)
+    updated = { ...existing, ...data }
+  else 
+    updated = {...data}
   sessionStorage.setItem(STORAGE_KEYS.SERVICES_DATA, JSON.stringify(updated))
 }
 
@@ -57,6 +61,7 @@ export const getServicesData = () => {
         selectedServices: {},
         selectedPackage: null,
         availableServices: [],
+        livePackageData: null, // Added for live package data
       }
 }
 
@@ -71,6 +76,11 @@ export const getSelectedServices = () => {
 
 export const getSelectedPackage = () => {
   return getServicesData().selectedPackage
+}
+
+// Get live package data
+export const getLivePackageData = () => {
+  return getServicesData().livePackageData
 }
 
 // Available Services functions
@@ -115,7 +125,7 @@ export const clearSelectedServices = () => {
   sessionStorage.setItem(STORAGE_KEYS.SERVICES_DATA, JSON.stringify(resetServicesData));
 };
 
-// Package definitions
+// Enhanced package definitions with dynamic support
 export const PACKAGES = [
   {
     id: "cherry-blossom",
@@ -139,3 +149,23 @@ export const PACKAGES = [
     description: "Includes catering, venue, photography, and hosting.",
   },
 ]
+
+// Function to get package details (supports both static and live data)
+export const getPackageDetails = (packageId) => {
+  // First check if we have live package data
+  const liveData = getLivePackageData()
+  if (liveData && (liveData.packageId === packageId || liveData.packageName === packageId)) {
+    return {
+      id: `package-${liveData.packageId}`,
+      name: liveData.packageName,
+      price: liveData.packagePrice,
+      icon: "📦",
+      description: liveData.packageDescription || "Custom package",
+      packageId: liveData.packageId,
+      services: liveData.services || [],
+    }
+  }
+
+  // Fallback to static packages
+  return PACKAGES.find((pkg) => pkg.id === packageId)
+}

@@ -1,7 +1,7 @@
 package com.Project.Backend.DTO;
 
 import com.Project.Backend.Entity.ShowcaseEntity;
-import com.Project.Backend.Entity.UnavailableDates;
+import com.Project.Backend.Entity.UnavailableDatesEntity;
 
 import java.util.List;
 
@@ -15,13 +15,13 @@ public class GetSubcontractor {
     private String serviceName;
     private String serviceDescription;
     private String category;
-    private List<UnavailableDates> unavailableDates;
+    private List<UnavailableDatesEntity> unavailableDates;
     private List<ShowcaseEntity> showcaseMedia;
 
     public GetSubcontractor(int subcontractorId, String name, String email,
                             String phone, String address, double servicePrice,
                             String serviceName, String serviceDescription,
-                            String category, List<UnavailableDates> unavailableDates,
+                            String category, List<UnavailableDatesEntity> unavailableDates,
                             List<ShowcaseEntity> showcaseMedia) {
         this.subcontractorId = subcontractorId;
         this.name = name;
@@ -108,11 +108,11 @@ public class GetSubcontractor {
         this.category = category;
     }
 
-    public List<UnavailableDates> getUnavailableDates() {
+    public List<UnavailableDatesEntity> getUnavailableDates() {
         return unavailableDates;
     }
 
-    public void setUnavailableDates(List<UnavailableDates> unavailableDates) {
+    public void setUnavailableDates(List<UnavailableDatesEntity> unavailableDates) {
         this.unavailableDates = unavailableDates;
     }
 

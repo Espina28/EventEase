@@ -1,25 +1,19 @@
- package com.Project.Backend.Entity;
+package com.Project.Backend.Entity;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
-import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import jakarta.persistence.*;
-import org.w3c.dom.Text;
-
 import java.sql.Date;
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
 @Table(name = "transactions")
-//@JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "transaction_Id")
 public class TransactionsEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int transaction_Id;
-
 
     @JoinColumn(name = "user_id")
     @ManyToOne
@@ -31,19 +25,22 @@ public class TransactionsEntity {
     @JsonBackReference(value = "event-transaction")
     private EventEntity event;
 
-    @OneToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "package_id")
-    @JsonManagedReference(value = "transaction-package")
+    @JsonBackReference(value = "transaction-package")
     private PackagesEntity packages;
 
     @OneToMany(mappedBy = "transactionsId", cascade = CascadeType.REMOVE, fetch = FetchType.EAGER)
     @JsonManagedReference(value = "transaction-event-service")
     private List<EventServiceEntity> eventServices;
 
-    //PAYMENT
     @OneToOne(mappedBy = "transaction", cascade = CascadeType.REMOVE, fetch = FetchType.EAGER)
     @JsonManagedReference(value = "transaction-payment")
     private PaymentEntity payment;
+
+    @OneToOne(mappedBy = "transaction", cascade = CascadeType.REMOVE, fetch = FetchType.EAGER)
+    @JsonManagedReference(value = "transaction-rejection")
+    private BookingRejectionNoteEntity rejection;
 
     private String transactionVenue;
     private Status transactionStatus;
@@ -59,14 +56,20 @@ public class TransactionsEntity {
         COMPLETED, DECLINED, CANCELLED, PENDING, ONGOING
     }
 
-    // Getters and Setters
-
-    @PrePersist //before it save to db this will run first to ensue the variables will not be empty
+    @PrePersist
     protected void onCreate() {
         this.transactionCreatedDdate = Date.valueOf(LocalDateTime.now().toLocalDate());
         this.transactionIsActive = true;
         this.transactionisApprove = false;
         this.transactionStatus = Status.PENDING;
+    }
+
+    public BookingRejectionNoteEntity getRejection() {
+        return rejection;
+    }
+
+    public void setRejection(BookingRejectionNoteEntity rejection) {
+        this.rejection = rejection;
     }
 
     public Date getTransactionCreatedDdate() {

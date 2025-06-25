@@ -31,18 +31,24 @@ const BookingSidePanel = ({ activeStep }) => {
       <div className="manage-booking-section">
         <h3>Manage Booking</h3>
         <ul>
-          {bookingSteps
-              .filter(step => !(currentEventName.toLowerCase().includes('package') && step.id === 'services'))
-              .map(step => (
-                  <li
-                      key={step.id}
-                      className={activeStep === step.id ? 'active' : ''}
-                  >
-                    <Link to={step.path}>
-                      {step.label}
-                    </Link>
-                  </li>
-              ))}
+        {bookingSteps
+          .filter(step => !(currentEventName.toLowerCase().includes('package') && step.id === 'services'))
+          .map(step => (
+            <li
+              key={step.id}
+              className={activeStep === step.id ? 'active' : ''}
+            >
+              <Link
+                to={step.path}
+                onClick={(e) => {
+                  e.preventDefault();
+                }}
+                  // keep visual feedback
+              >
+                {step.label}
+              </Link>
+            </li>
+          ))}
         </ul>
       </div>
       
@@ -54,7 +60,14 @@ const BookingSidePanel = ({ activeStep }) => {
               key={step.id}
               className={activeStep === step.id ? 'active' : ''}
             >
-              <Link to={step.path}>{step.label}</Link>
+              <Link
+                to={step.path}
+                onClick={(e) => {
+                  e.preventDefault();
+                }}
+              >
+                {step.label}
+              </Link>
             </li>
           ))}
         </ul>

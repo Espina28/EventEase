@@ -12,9 +12,11 @@ import {
   getSelectedServices,
   getSelectedPackage,
   getEventDetails,
+  getPersonalInfo,
   saveServicesData,
   saveAvailableServices,
   PACKAGES,
+  clearBookingData,
 } from "./utils/booking-storage"
 import axios from "axios"
 
@@ -33,6 +35,9 @@ const SelectServicePage = () => {
   const [selectedPackage, setSelectedPackage] = useState(getSelectedPackage)
 
   const [showcaseData, setShowcaseData] = useState({ visible: false, id: null, title: "" });
+
+  const [personalInfo, setPersonalInfo] = useState(getPersonalInfo)
+  const [eventDetails, setEventDetails] = useState(getEventDetails)
 
   // New state for subcontractor services
   const [subcontractorServices, setSubcontractorServices] = useState([])
@@ -71,7 +76,7 @@ const SelectServicePage = () => {
             subcontractor.user?.firstname && subcontractor.user?.lastname
               ? `${subcontractor.user.firstname} ${subcontractor.user.lastname}`
               : "Service Provider",
-          category: subcontractor.subcontractor_serviceCategory,
+          category: subcontractor.category,
         }))
 
         console.log("Transformed services with prices:", services)
@@ -102,6 +107,29 @@ const SelectServicePage = () => {
     fetchSubcontractorServices()
   }, [])
   
+  
+  const submitFormProgress = async () => {
+    const token = localStorage.getItem("token");
+    const body = {
+      email: personalInfo.email,
+      eventName: currentEventName,
+      jsonData: JSON.stringify({
+        personalInfo,
+        eventDetails,
+        selectedServices
+      })
+    };
+
+    try {
+      await axios.post(`http://localhost:8080/form-draft/save`, body, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    } catch (error) {
+      console.error("Error fetching form progress:", error);
+      throw error; // rethrow so beforeNavigate can block navigation
+    }
+  };
+
   // Helper function to get appropriate icon based on service name
   const getServiceIcon = (serviceName) => {
     const name = serviceName.toLowerCase()
@@ -147,7 +175,7 @@ const SelectServicePage = () => {
   const handleTabChange = (tab) => {
     setActiveTab(tab)
 
-    // Clear the other option when switching tabs
+      // Clear the other option when switching tabs
     if (tab === "package") {
       // Switching to package tab - clear all custom services
       const clearedServices = {}
@@ -190,6 +218,8 @@ const SelectServicePage = () => {
       availableServices: subcontractorServices,
     })
 
+    submitFormProgress()
+
     // Navigate to preview page with event name
     if (eventName) {
       navigate(`/book/${encodeURIComponent(eventName)}/preview`)
@@ -201,6 +231,7 @@ const SelectServicePage = () => {
   // Handle previous button click
   const handlePrevious = () => {
     if (eventName) {
+      submitFormProgress()
       navigate(`/book/${encodeURIComponent(eventName)}/inputdetails`)
     } else {
       navigate("/book/inputdetails")
@@ -228,13 +259,26 @@ const SelectServicePage = () => {
       <div className="booking-container">
         {/* Breadcrumb Navigation */}
         <div className="breadcrumb">
-          <Link to="/events-dashboard">Home</Link> /{" "}
+          <Link to="/events-dashboard" onClick={() => clearBookingData()}>Home</Link> /{" "}
           <Link to={`/event/${encodeURIComponent(currentEventName)}`}>{currentEventName}</Link> / <span>Book Now</span>
         </div>
 
         <div className="booking-content">
           {/* Side Panel */}
-          <BookingSidePanel activeStep="services" />
+          {/* <BookingSidePanel activeStep="services" /> */}
+          <BookingSidePanel
+            activeStep="enter-details"
+            beforeNavigate={ async () => {
+              try {
+                // Submit progress
+                await submitFormProgress(); // 👈 make sure it's `await` if it returns a Promise
+                return true; // allow navigation
+              } catch (error) {
+                console.error("Blocking navigation due to error:", error);
+                return false; // block navigation
+              }
+            }}
+          />
 
           {/* Main Content */}
           <div className="main-form-content">
@@ -258,7 +302,7 @@ const SelectServicePage = () => {
               <div className="step">
                 <div className="step-number">4</div>
                 <div className="step-label">Payment</div>
-              </div>
+              </div>  
             </div>
 
             {/* Services Selection */}
@@ -266,7 +310,7 @@ const SelectServicePage = () => {
               <h2 className="section-title">Select Services</h2>
 
               {/* Tabs */}
-              <div className="service-tabs">
+              {/* <div className="service-tabs">
                 <button
                   className={`tab-button ${activeTab === "custom" ? "active" : ""}`}
                   onClick={() => handleTabChange("custom")}
@@ -279,7 +323,7 @@ const SelectServicePage = () => {
                 >
                   Package
                 </button>
-              </div>
+              </div> */}
 
               {/* Tab Content */}
               <div className="tab-content">
@@ -301,7 +345,7 @@ const SelectServicePage = () => {
                             <div className="service-icon">{service.icon}</div>
                           </div>
                           <div className="service-info">
-                            <div className="service-name">{service.name}</div>
+                            <div className="service-name">{service.category}</div>
                             <div className="service-provider">by {service.subcontractorName}</div>
                             <div className="service-price">{formatAsPeso(service.price)}</div>
                           </div>

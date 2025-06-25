@@ -1,6 +1,6 @@
 package com.Project.Backend.Service;
 
-import com.Project.Backend.Entity.UnavailableDates;
+import com.Project.Backend.Entity.UnavailableDatesEntity;
 import com.Project.Backend.Entity.SubcontractorEntity;
 import com.Project.Backend.Repository.UnavailableDatesRepo;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,17 +22,17 @@ public class UnavailableDatesService {
     private SubcontractorService subcontractorService;
     
     // Get all unavailable dates for a specific subcontractor by email
-    public List<UnavailableDates> getUnavailableDatesByEmail(String email) {
+    public List<UnavailableDatesEntity> getUnavailableDatesByEmail(String email) {
         return unavailableDatesRepo.findBySubcontractorEmail(email);
     }
     
     // Get all unavailable dates for a specific subcontractor by ID
-    public List<UnavailableDates> getUnavailableDatesBySubcontractorId(int subcontractorId) {
+    public List<UnavailableDatesEntity> getUnavailableDatesBySubcontractorId(int subcontractorId) {
         return unavailableDatesRepo.findBySubcontractorId(subcontractorId);
     }
     
     // Add a new unavailable date
-    public UnavailableDates addUnavailableDate(String email, Date date, String reason) {
+    public UnavailableDatesEntity addUnavailableDate(String email, Date date, String reason) {
         SubcontractorEntity subcontractor = subcontractorService.getSubcontractorByEmail(email);
         if (subcontractor == null) {
             throw new RuntimeException("Subcontractor not found with email: " + email);
@@ -43,7 +43,7 @@ public class UnavailableDatesService {
             throw new RuntimeException("This date is already marked as unavailable");
         }
         
-        UnavailableDates unavailableDate = new UnavailableDates();
+        UnavailableDatesEntity unavailableDate = new UnavailableDatesEntity();
         unavailableDate.setSubcontractor(subcontractor);
         unavailableDate.setDate(date);
         unavailableDate.setReason(reason);
@@ -58,22 +58,22 @@ public class UnavailableDatesService {
     }
     
     // Get specific unavailable date by ID
-    public UnavailableDates getUnavailableDateById(int id) {
-        Optional<UnavailableDates> result = unavailableDatesRepo.findById(id);
+    public UnavailableDatesEntity getUnavailableDateById(int id) {
+        Optional<UnavailableDatesEntity> result = unavailableDatesRepo.findById(id);
         return result.orElse(null);
     }
     
     // Batch add unavailable dates
-    public List<UnavailableDates> addMultipleUnavailableDates(String email, List<Date> dates, String reason) {
+    public List<UnavailableDatesEntity> addMultipleUnavailableDates(String email, List<Date> dates, String reason) {
         SubcontractorEntity subcontractor = subcontractorService.getSubcontractorByEmail(email);
         if (subcontractor == null) {
             throw new RuntimeException("Subcontractor not found with email: " + email);
         }
         
-        List<UnavailableDates> savedDates = dates.stream()
+        List<UnavailableDatesEntity> savedDates = dates.stream()
             .filter(date -> !unavailableDatesRepo.existsBySubcontractorAndDate(subcontractor, date))
             .map(date -> {
-                UnavailableDates unavailableDate = new UnavailableDates();
+                UnavailableDatesEntity unavailableDate = new UnavailableDatesEntity();
                 unavailableDate.setSubcontractor(subcontractor);
                 unavailableDate.setDate(date);
                 unavailableDate.setReason(reason);
@@ -83,5 +83,9 @@ public class UnavailableDatesService {
             .toList();
         
         return savedDates;
+    }
+
+    public List<UnavailableDatesEntity> getAllUnavailableDates(){
+        return unavailableDatesRepo.findAll();
     }
 }

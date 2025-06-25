@@ -23,8 +23,8 @@ public class NotificationController {
      * Get all notifications for the authenticated user
      */
     @GetMapping
-    public ResponseEntity<List<NotificationEntity>> getUserNotifications(@RequestParam int userId) {
-        List<NotificationEntity> notifications = notificationService.getUserNotifications(userId);
+    public ResponseEntity<List<NotificationEntity>> getUserNotifications(@RequestParam String userEmail) {
+        List<NotificationEntity> notifications = notificationService.getUserNotifications(userEmail);
         return ResponseEntity.ok(notifications);
     }
     
@@ -32,8 +32,8 @@ public class NotificationController {
      * Get unread notifications for the authenticated user
      */
     @GetMapping("/unread")
-    public ResponseEntity<List<NotificationEntity>> getUnreadNotifications(@RequestParam int userId) {
-        List<NotificationEntity> notifications = notificationService.getUnreadNotifications(userId);
+    public ResponseEntity<List<NotificationEntity>> getUnreadNotifications(@RequestParam String userEmail) {
+        List<NotificationEntity> notifications = notificationService.getUnreadNotifications(userEmail);
         return ResponseEntity.ok(notifications);
     }
     
@@ -41,8 +41,8 @@ public class NotificationController {
      * Count unread notifications for the authenticated user
      */
     @GetMapping("/count")
-    public ResponseEntity<Map<String, Long>> countUnreadNotifications(@RequestParam int userId) {
-        long count = notificationService.countUnreadNotifications(userId);
+    public ResponseEntity<Map<String, Long>> countUnreadNotifications(@RequestParam String userEmail) {
+        long count = notificationService.countUnreadNotifications(userEmail);
         Map<String, Long> response = new HashMap<>();
         response.put("count", count);
         return ResponseEntity.ok(response);
@@ -66,8 +66,8 @@ public class NotificationController {
      * Mark all notifications as read for the authenticated user
      */
     @PutMapping("/read-all")
-    public ResponseEntity<Void> markAllAsRead(@RequestParam int userId) {
-        notificationService.markAllAsRead(userId);
+    public ResponseEntity<Void> markAllAsRead(@RequestParam String userEmail) {
+        notificationService.markAllAsRead(userEmail);
         return ResponseEntity.ok().build();
     }
     
@@ -85,9 +85,9 @@ public class NotificationController {
      */
     @GetMapping("/type/{notificationType}")
     public ResponseEntity<List<NotificationEntity>> getNotificationsByType(
-            @RequestParam int userId, 
+            @RequestParam String userEmail, 
             @PathVariable String notificationType) {
-        List<NotificationEntity> notifications = notificationService.getNotificationsByType(userId, notificationType);
+        List<NotificationEntity> notifications = notificationService.getNotificationsByType(userEmail, notificationType);
         return ResponseEntity.ok(notifications);
     }
     
@@ -96,12 +96,12 @@ public class NotificationController {
      */
     @PostMapping("/test")
     public ResponseEntity<NotificationEntity> createTestNotification(
-            @RequestParam int userId,
+            @RequestParam String userEmail,
             @RequestParam String message,
             @RequestParam String type) {
         
         NotificationEntity notification = notificationService.createNotification(
-            userId,
+            userEmail,
             "User",
             message,
             type
@@ -118,8 +118,8 @@ public class NotificationController {
      * Create a welcome notification
      */
     @PostMapping("/welcome")
-    public ResponseEntity<NotificationEntity> createWelcomeNotification(@RequestParam int userId) {
-        NotificationEntity notification = notificationService.createWelcomeNotification(userId);
+    public ResponseEntity<NotificationEntity> createWelcomeNotification(@RequestParam String userEmail) {
+        NotificationEntity notification = notificationService.createWelcomeNotification(userEmail);
         
         if (notification != null) {
             return ResponseEntity.status(HttpStatus.CREATED).body(notification);
@@ -133,10 +133,10 @@ public class NotificationController {
      */
     @PostMapping("/booking-approved")
     public ResponseEntity<NotificationEntity> createBookingApprovalNotification(
-            @RequestParam int userId,
+            @RequestParam String userEmail,
             @RequestParam String amount) {
         
-        NotificationEntity notification = notificationService.createBookingApprovalNotification(userId, amount);
+        NotificationEntity notification = notificationService.createBookingApprovalNotification(userEmail, amount);
         
         if (notification != null) {
             return ResponseEntity.status(HttpStatus.CREATED).body(notification);
@@ -149,13 +149,44 @@ public class NotificationController {
      * Create a booking rejection notification
      */
     @PostMapping("/booking-rejected")
-    public ResponseEntity<NotificationEntity> createBookingRejectionNotification(@RequestParam int userId) {
-        NotificationEntity notification = notificationService.createBookingRejectionNotification(userId);
+    public ResponseEntity<NotificationEntity> createBookingRejectionNotification(@RequestParam String userEmail, @RequestParam String reason) {
+        NotificationEntity notification = notificationService.createBookingRejectionNotification(userEmail, reason);
         
         if (notification != null) {
             return ResponseEntity.status(HttpStatus.CREATED).body(notification);
         }
         
+        return ResponseEntity.badRequest().build();
+    }
+
+    /**
+     * Notify all admins
+     */
+    @PostMapping("/notify-admins")
+    public ResponseEntity<Void> notifyAdmins(@RequestParam String message) {
+        notificationService.notifyUsersByRole("Admin", message);
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * Notify subcontractors related to a package
+     */
+    @PostMapping("/notify-subcontractors")
+    public ResponseEntity<Void> notifySubcontractors(@RequestParam int packageId, @RequestParam String message) {
+        notificationService.notifySubcontractorsByPackage(packageId, message);
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * Notify subcontractors by subcontractor ID
+     */
+    @PostMapping("/notify-subcontractors-by-id")
+    public ResponseEntity<NotificationEntity> notifySubcontractorsById(@RequestParam int subcontractorId, @RequestParam String message) {
+        System.out.println("subcontractorId" + subcontractorId + "message" + message);
+        NotificationEntity notification = notificationService.notifySubcontractorById(subcontractorId, message);
+        if (notification != null) {
+            return ResponseEntity.status(HttpStatus.CREATED).body(notification);
+        }
         return ResponseEntity.badRequest().build();
     }
 }

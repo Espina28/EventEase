@@ -17,6 +17,12 @@ public class PackageServicesService {
         return packageServicesRepository.save(packageServices);
     }
 
+    public PackageServicesEntity getById(int packageServiceId) {
+        return packageServicesRepository.findById(packageServiceId).orElse(null);
+    }
+
+
+
 //    public PackageServicesEntity updatePackageServices(PackageServicesEntity newPackageServicesData) {
 //        try {
 //            // Validate if the record to update exists
@@ -43,5 +49,17 @@ public class PackageServicesService {
 //            throw new RuntimeException("Failed to update Package Services", e);
 //        }
 //    }
+public String delete(int packageServiceId) {
+    try {
+        PackageServicesEntity packageService = packageServicesRepository.findById(packageServiceId).orElse(null);
+        if(packageService == null) {
+            throw new IllegalArgumentException("Package Service not found");
+        }
+        packageServicesRepository.deleteById(packageServiceId);
+        return "Package Service deleted successfully";
+    } catch (Exception e) {
+        throw new RuntimeException(e.getMessage());
+    }
+}
 
 }

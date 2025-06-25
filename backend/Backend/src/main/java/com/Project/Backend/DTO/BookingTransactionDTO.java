@@ -13,7 +13,7 @@ public class BookingTransactionDTO {
     
     // Event Details
     private String eventName;
-    private int eventId;
+    private Integer eventId;
     private String transactionVenue;
     private Date transactionDate;
     private String transactionNote;
@@ -75,11 +75,11 @@ public class BookingTransactionDTO {
         this.eventName = eventName;
     }
 
-    public int getEventId() {
+    public Integer getEventId() {
         return eventId;
     }
 
-    public void setEventId(int eventId) {
+    public void setEventId(Integer eventId) {
         this.eventId = eventId;
     }
 
