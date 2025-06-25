@@ -588,7 +588,7 @@ export default function LoginPage() {
               </motion.button>
 
               {/* Facebook Login Button (Styled) */}
-              <motion.button
+              {/*<motion.button
                 type="button"
                 onClick={() => handleSocialLogin("Facebook")}
                 className="flex items-center justify-center w-full h-12 border rounded-lg shadow-sm hover:shadow-md transition text-gray-700 hover:bg-gray-50"
@@ -598,7 +598,7 @@ export default function LoginPage() {
                 <FaFacebook size={24} className="mr-2 text-blue-600" />
                 <span className="hidden sm:inline">Login with Facebook</span>
                 <span className="sm:hidden">Facebook</span>
-              </motion.button>
+              </motion.button>*/}
             </div>
 
             <div className="relative">

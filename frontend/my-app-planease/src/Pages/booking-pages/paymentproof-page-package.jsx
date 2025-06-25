@@ -368,7 +368,7 @@ const PaymentProofPagePackage = () => {
         handleDeleteFormDraft()
         // Show success message and redirect
         setTimeout(() => {
-          showModal("Your package booking was submitted successfully! Our team will contact you to finalize the details.", true);
+          showModal("Your package booking was submitted successfully!", true);
         }, 2000)
       }
     } catch (error) {

@@ -37,6 +37,7 @@ public class PackagesService {
 
             packages.setPackagePrice(newpackagedata.getPackagePrice());
             packages.setPackageName(newpackagedata.getPackageName());
+            packages.setPackageDescription(newpackagedata.getPackageDescription());
             return packagesRepository.save(packages);
         }catch(IllegalArgumentException  e){
             throw new RuntimeException(e.getMessage());
@@ -50,11 +51,17 @@ public class PackagesService {
     public String deletePackage(int id) {
         String message = null;
         PackagesEntity packages = null;
+
         try{
             packages = packagesRepository.findById(id).orElse(null);
             if(packages == null){
                 throw new IllegalArgumentException("Package not found");
             }
+//
+//            List<PackageServicesEntity> packageServicesEntities = packageServicesRepository.findAll();
+//            for (PackageServicesEntity packageServicesEntity : packageServicesEntities) {
+//                packageServicesRepository.deleteById(packageServicesEntity.getPackages().getPackageId());
+//            }
             packagesRepository.deleteById(id);
             message = "Package deleted successfully";
             return message;

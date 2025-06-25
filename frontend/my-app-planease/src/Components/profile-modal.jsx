@@ -33,6 +33,18 @@ export function ProfileModal({ open, onOpenChange }) {
     profilePicture: null,
     role: "",
   })
+  
+  // State to track the display user info (what's shown in the header) separately from the form data
+  const [displayUser, setDisplayUser] = useState({
+    firstname: "",
+    lastname: "",
+    email: "",
+    role: "",
+    region: "",
+    province: "",
+    cityAndMul: "",
+    barangay: ""
+  })
   const [showPasswordModal, setShowPasswordModal] = useState(false)
   const [showNewPasswordModal, setShowNewPasswordModal] = useState(false)
   const [currentPassword, setCurrentPassword] = useState("")
@@ -67,7 +79,7 @@ export function ProfileModal({ open, onOpenChange }) {
   const [showOTPModal, setShowOTPModal] = useState(false)
   const [otpValue, setOtpValue] = useState("")
   const [otpError, setOtpError] = useState("")
-  const [otpTimer, setOtpTimer] = useState(60)
+  const [otpTimer, setOtpTimer] = useState(300)
   const [isResendingOTP, setIsResendingOTP] = useState(false)
   const otpTimerRef = useRef(null)
   const [isSendingOTP, setIsSendingOTP] = useState(false)
@@ -123,7 +135,8 @@ export function ProfileModal({ open, onOpenChange }) {
           headers: { Authorization: `Bearer ${token}` },
         })
         const userPhone = userData.phoneNumber || ""
-        setUser({
+        const userData2 = {
+          userId: userData.userId,
           firstname: userData.firstname || "",
           lastname: userData.lastname || "",
           email: userData.email || "",
@@ -134,6 +147,17 @@ export function ProfileModal({ open, onOpenChange }) {
           phone: userPhone,
           profilePicture: userData.profilePicture || null,
           role: userData.role || "",
+        };
+        setUser(userData2);
+        setDisplayUser({
+          firstname: userData.firstname || "",
+          lastname: userData.lastname || "",
+          email: userData.email || "",
+          role: userData.role || "",
+          region: userData.region || "",
+          province: userData.province || "",
+          cityAndMul: userData.cityAndMul || "",
+          barangay: userData.barangay || ""
         })
         if (userPhone) {
           const phoneMatch = userPhone.match(/^\+(\d+)(\d{9,})$/)
@@ -241,7 +265,7 @@ export function ProfileModal({ open, onOpenChange }) {
   // Start timer only when modal is open and isSendingOTP becomes false
   useEffect(() => {
     if (showOTPModal && !isSendingOTP) {
-      setOtpTimer(60)
+      setOtpTimer(300) // 5 minutes
       if (otpTimerRef.current) clearInterval(otpTimerRef.current)
       otpTimerRef.current = setInterval(() => {
         setOtpTimer((prev) => {
@@ -266,9 +290,9 @@ export function ProfileModal({ open, onOpenChange }) {
     setUser((prev) => ({ ...prev, [field]: value }))
   }
 
-  // Generate full address from components
+  // Generate full address from components (using displayUser to prevent live updates)
   const getFullAddress = () => {
-    const parts = [user.barangay, user.cityAndMul, user.province, user.region].filter(
+    const parts = [displayUser.barangay, displayUser.cityAndMul, displayUser.province, displayUser.region].filter(
       (part) => part && part.trim() !== "",
     )
 
@@ -653,9 +677,9 @@ export function ProfileModal({ open, onOpenChange }) {
               {/* Profile Info */}
               <div>
                 <div className="text-xl font-semibold">
-                  {user.firstname} {user.lastname}
-                </div>
-                <div className="text-sm text-gray-500 mb-1">{user.role || "No Role"}</div>
+                {displayUser.firstname} {displayUser.lastname}
+              </div>
+              <div className="text-sm text-gray-500 mb-1">{displayUser.role || "No Role"}</div>
                 <div className="flex items-center text-sm text-gray-600">
                   <MapPin size={14} className="mr-1" />
                   <span className="line-clamp-2">{getFullAddress()}</span>
@@ -1244,6 +1268,17 @@ export function ProfileModal({ open, onOpenChange }) {
                             })
                             if (resp.status === 200) {
                               setEditMode(false)
+                              // Update the display user with the new data
+                              setDisplayUser({
+                                firstname: pendingProfileUpdate.firstname,
+                                lastname: pendingProfileUpdate.lastname,
+                                email: user.email,
+                                role: user.role,
+                                region: pendingProfileUpdate.region,
+                                province: pendingProfileUpdate.province,
+                                cityAndMul: pendingProfileUpdate.cityAndMul,
+                                barangay: pendingProfileUpdate.barangay
+                              })
                               setSnackbar({
                                 open: true,
                                 message: "Profile updated successfully",
@@ -1340,7 +1375,7 @@ export function ProfileModal({ open, onOpenChange }) {
                             }
                             setIsResendingOTP(false)
                             setIsSendingOTP(false)
-                            setOtpTimer(60)
+                            setOtpTimer(300) // 5 minutes
                             if (otpTimerRef.current) clearInterval(otpTimerRef.current)
                             otpTimerRef.current = setInterval(() => {
                               setOtpTimer((prev) => {

@@ -365,12 +365,7 @@ const UserBookingsPage = () => {
                 >
                   Status
                 </th>
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Actions
-                </th>
+              
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -383,10 +378,10 @@ const UserBookingsPage = () => {
                       </div>
                       <div className="ml-4">
                         <div className="text-sm font-medium text-gray-900">
-                          {booking.event_name || booking.eventName || 'Unnamed Booking'}
+                          {booking.packages || booking.eventName || 'Unnnaamed'}
                         </div>
                         <div className="text-sm text-gray-500">
-                          ID: {booking.id || booking.transactionId}
+                         
                         </div>
                       </div>
                     </div>
@@ -403,12 +398,7 @@ const UserBookingsPage = () => {
                     {getStatusBadge(booking)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <Link
-                      to={`/bookings/${booking.id}`}
-                      className="text-blue-600 hover:text-blue-800 font-medium"
-                    >
-                      View Details
-                    </Link>
+                   
                   </td>
                 </tr>
               ))}
