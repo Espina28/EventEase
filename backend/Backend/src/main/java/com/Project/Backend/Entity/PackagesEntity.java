@@ -22,7 +22,7 @@ public class PackagesEntity {
     private String packageDescription;
     private String packageImage;
 
-    @OneToMany(mappedBy = "packages")
+    @OneToMany(mappedBy = "packages", cascade = CascadeType.REMOVE)
     @JsonManagedReference("package-service")
     private List<PackageServicesEntity> packageServices;
 
