@@ -157,14 +157,7 @@ const PreviewBookingPagePackage = () => {
               <h2 className="section-title">Preview Booking for {currentPackageName}</h2>
 
               {/* Debug Info */}
-              {selectedPackage && selectedPackage.packageId && (
-                <div
-                  className="debug-info"
-                  style={{ background: "#f0f0f0", padding: "10px", margin: "10px 0", borderRadius: "5px" }}
-                >
-                  <strong>Package ID: {selectedPackage.packageId}</strong>
-                </div>
-              )}
+           
 
               {/* Personal Information */}
               <div className="preview-section">
