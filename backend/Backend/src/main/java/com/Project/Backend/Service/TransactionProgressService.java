@@ -2,13 +2,22 @@ package com.Project.Backend.Service;
 
 import com.Project.Backend.Entity.TransactionProgressEntity;
 import com.Project.Backend.Entity.TransactionsEntity;
+import com.Project.Backend.Entity.SubcontractorProgressEntity;
+import com.Project.Backend.Entity.SubcontractorEntity;
+import com.Project.Backend.Entity.EventServiceEntity;
 import com.Project.Backend.Repository.TransactionProgressRepository;
+import com.Project.Backend.Repository.SubcontractorProgressRepository;
+import com.Project.Backend.Repository.SubContractorRepository;
+import com.Project.Backend.Repository.EventServiceRepository;
+import com.Project.Backend.DTO.SubcontractorProgressDTO;
+import com.Project.Backend.DTO.EventProgressDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -16,6 +25,15 @@ public class TransactionProgressService {
 
     @Autowired
     private TransactionProgressRepository transactionProgressRepository;
+
+    @Autowired
+    private SubcontractorProgressRepository subcontractorProgressRepository;
+
+    @Autowired
+    private SubContractorRepository subContractorRepository;
+
+    @Autowired
+    private EventServiceRepository eventServiceRepository;
 
     /**
      * Create initial progress record when transaction is created
@@ -133,5 +151,158 @@ public class TransactionProgressService {
             return List.of(progress.get());
         }
         throw new RuntimeException("Progress history not found for transaction ID: " + transactionId);
+    }
+
+    // ==================== SUBCONTRACTOR PROGRESS METHODS ====================
+
+    /**
+     * Create initial subcontractor progress records for a transaction
+     */
+    public void createInitialSubcontractorProgress(TransactionsEntity transaction) {
+        // Get all subcontractors assigned to this transaction
+        List<EventServiceEntity> eventServices = eventServiceRepository.findByTransactionId(transaction.getTransaction_Id());
+
+        for (EventServiceEntity eventService : eventServices) {
+            SubcontractorEntity subcontractor = eventService.getSubcontractor();
+            if (subcontractor != null) {
+                // Check if progress already exists
+                Optional<SubcontractorProgressEntity> existingProgress =
+                    subcontractorProgressRepository.findByTransactionIdAndSubcontractorId(
+                        transaction.getTransaction_Id(), subcontractor.getSubcontractor_Id());
+
+                if (existingProgress.isEmpty()) {
+                    SubcontractorProgressEntity progress = new SubcontractorProgressEntity(
+                        transaction,
+                        subcontractor,
+                        0, // Initial progress is 0%
+                        "Subcontractor assigned to event"
+                    );
+                    subcontractorProgressRepository.save(progress);
+                }
+            }
+        }
+    }
+
+    /**
+     * Update subcontractor progress
+     */
+    public SubcontractorProgressEntity updateSubcontractorProgress(int transactionId, int subcontractorId,
+                                                                 int progressPercentage, String checkInStatus, String notes) {
+        Optional<SubcontractorProgressEntity> existingProgress =
+            subcontractorProgressRepository.findByTransactionIdAndSubcontractorId(transactionId, subcontractorId);
+
+        if (existingProgress.isEmpty()) {
+            throw new RuntimeException("Subcontractor progress not found for transaction ID: " + transactionId +
+                                     " and subcontractor ID: " + subcontractorId);
+        }
+
+        SubcontractorProgressEntity progress = existingProgress.get();
+        progress.setProgressPercentage(Math.max(0, Math.min(100, progressPercentage)));
+
+        if (checkInStatus != null) {
+            try {
+                progress.setCheckInStatus(SubcontractorProgressEntity.CheckInStatus.valueOf(checkInStatus.toUpperCase()));
+            } catch (IllegalArgumentException e) {
+                throw new RuntimeException("Invalid check-in status: " + checkInStatus);
+            }
+        }
+
+        if (notes != null && !notes.trim().isEmpty()) {
+            progress.setProgressNotes(notes);
+        }
+
+        return subcontractorProgressRepository.save(progress);
+    }
+
+    /**
+     * Get all subcontractor progress for a transaction
+     */
+    public List<SubcontractorProgressEntity> getSubcontractorProgressByTransactionId(int transactionId) {
+        return subcontractorProgressRepository.findByTransactionId(transactionId);
+    }
+
+    /**
+     * Get subcontractor progress as DTOs for a transaction
+     */
+    public List<SubcontractorProgressDTO> getSubcontractorProgressDTOs(int transactionId) {
+        List<SubcontractorProgressEntity> progressEntities = getSubcontractorProgressByTransactionId(transactionId);
+
+        return progressEntities.stream()
+            .map(entity -> new SubcontractorProgressDTO(
+                entity.getSubcontractorProgressId(),
+                entity.getTransaction().getTransaction_Id(),
+                entity.getSubcontractor().getSubcontractor_Id(),
+                entity.getSubcontractor().getUser() != null ?
+                    entity.getSubcontractor().getUser().getFirstname() + " " +
+                    entity.getSubcontractor().getUser().getLastname() :
+                    entity.getSubcontractor().getSubcontractor_serviceName(),
+                entity.getSubcontractor().getSubcontractor_serviceCategory(),
+                "/placeholder.svg", // Default avatar
+                entity.getProgressPercentage(),
+                entity.getCheckInStatus().toString(),
+                entity.getProgressNotes(),
+                entity.getCreatedAt(),
+                entity.getUpdatedAt()
+            ))
+            .collect(Collectors.toList());
+    }
+
+    /**
+     * Get event progress with subcontractors
+     */
+    public EventProgressDTO getEventProgress(int transactionId) {
+        // Get transaction details
+        Optional<TransactionsEntity> transactionOpt = Optional.ofNullable(null); // This would need to be injected
+        // For now, we'll create a mock transaction - in real implementation, you'd inject TransactionService
+
+        // Get subcontractor progress
+        List<SubcontractorProgressDTO> subcontractorProgress = getSubcontractorProgressDTOs(transactionId);
+
+        // Calculate overall progress
+        int overallProgress = subcontractorProgress.isEmpty() ? 0 :
+            subcontractorProgress.stream()
+                .mapToInt(SubcontractorProgressDTO::getProgressPercentage)
+                .sum() / subcontractorProgress.size();
+
+        // Determine overall check-in status
+        String overallCheckInStatus = "pending";
+        if (!subcontractorProgress.isEmpty()) {
+            boolean hasRejected = subcontractorProgress.stream()
+                .anyMatch(sp -> "rejected".equalsIgnoreCase(sp.getCheckInStatus()));
+            boolean hasPending = subcontractorProgress.stream()
+                .anyMatch(sp -> "pending".equalsIgnoreCase(sp.getCheckInStatus()));
+            boolean allApproved = subcontractorProgress.stream()
+                .allMatch(sp -> "approved".equalsIgnoreCase(sp.getCheckInStatus()));
+
+            if (hasRejected) {
+                overallCheckInStatus = "rejected";
+            } else if (hasPending) {
+                overallCheckInStatus = "pending";
+            } else if (allApproved) {
+                overallCheckInStatus = "approved";
+            }
+        }
+
+        return new EventProgressDTO(
+            transactionId,
+            "Event " + transactionId, // This would come from transaction
+            "Location TBD", // This would come from transaction
+            "2024-01-15", // This would come from transaction
+            "in-progress", // This would be calculated
+            overallCheckInStatus,
+            "Event in progress",
+            overallProgress,
+            java.time.LocalDateTime.now(),
+            subcontractorProgress
+        );
+    }
+
+    /**
+     * Get all events progress
+     */
+    public List<EventProgressDTO> getAllEventsProgress() {
+        // This would typically get all transactions and convert them to EventProgressDTO
+        // For now, return empty list - would need to be implemented based on actual transaction data
+        return List.of();
     }
 }

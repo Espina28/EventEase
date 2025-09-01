@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import axios from "axios"
 import AdminSideBar from "../../Components/admin-sidebar.jsx"
 import Navbar from "../../Components/Navbar"
 import {
@@ -42,335 +43,7 @@ import {
 } from "@mui/icons-material"
 
 const EventTrackingAdmin = () => {
-  const [events, setEvents] = useState([
-    {
-      id: "1",
-      eventName: "Corporate Conference Setup",
-      subcontractors: [
-        {
-          id: "sub1",
-          name: "Elite Events Co.",
-          role: "Main Setup",
-          progressPercentage: 65,
-          checkInStatus: "pending",
-          notes: "Stage setup completed, working on lighting and sound system installation",
-          lastUpdate: "2024-01-16 14:30",
-          avatar: "/elite-events-co-logo.png",
-        },
-      ],
-      currentStatus: "in-progress",
-      location: "Downtown Convention Center",
-      startDate: "2024-01-15",
-      lastUpdate: "2024-01-16 14:30",
-      checkInStatus: "pending",
-      notes: "Stage setup completed, working on lighting and sound system installation",
-      progressPercentage: 65,
-    },
-    {
-      id: "2",
-      eventName: "Wedding Reception",
-      subcontractors: [
-        {
-          id: "sub2",
-          name: "Dream Weddings LLC",
-          role: "Decoration",
-          progressPercentage: 90,
-          checkInStatus: "approved",
-          notes: "Decoration complete, awaiting final inspection from venue manager",
-          lastUpdate: "2024-01-16 10:15",
-          avatar: "/placeholder-ozhfb.png",
-        },
-      ],
-      currentStatus: "review",
-      location: "Garden Villa Resort",
-      startDate: "2024-01-14",
-      lastUpdate: "2024-01-16 10:15",
-      checkInStatus: "approved",
-      notes: "Decoration complete, awaiting final inspection from venue manager",
-      progressPercentage: 90,
-    },
-    {
-      id: "3",
-      eventName: "Product Launch Event",
-      subcontractors: [
-        {
-          id: "sub3a",
-          name: "Tech Events Pro",
-          role: "AV Equipment",
-          progressPercentage: 30,
-          checkInStatus: "pending",
-          notes: "Equipment delivery scheduled for today, waiting for venue access",
-          lastUpdate: "2024-01-16 09:00",
-          avatar: "/tech-events-pro-logo.png",
-        },
-        {
-          id: "sub3b",
-          name: "Stage Masters Inc.",
-          role: "Stage Setup",
-          progressPercentage: 20,
-          checkInStatus: "pending",
-          notes: "Stage design approved, materials being prepared",
-          lastUpdate: "2024-01-16 08:30",
-          avatar: "/stage-masters-inc-logo.png",
-        },
-        {
-          id: "sub3c",
-          name: "Catering Plus",
-          role: "Food & Beverage",
-          progressPercentage: 25,
-          checkInStatus: "approved",
-          notes: "Menu finalized, ingredients being sourced",
-          lastUpdate: "2024-01-16 07:45",
-          avatar: "/catering-plus-logo.png",
-        },
-        {
-          id: "sub3d",
-          name: "Security Solutions",
-          role: "Event Security",
-          progressPercentage: 40,
-          checkInStatus: "approved",
-          notes: "Security plan approved, personnel assigned",
-          lastUpdate: "2024-01-16 08:00",
-          avatar: "/security-solutions-logo.png",
-        },
-      ],
-      currentStatus: "pending",
-      location: "Innovation Hub",
-      startDate: "2024-01-17",
-      lastUpdate: "2024-01-16 09:00",
-      checkInStatus: "pending",
-      notes: "Equipment delivery scheduled for today, waiting for venue access",
-      progressPercentage: 25,
-    },
-    {
-      id: "4",
-      eventName: "Annual Charity Gala",
-      subcontractors: [
-        {
-          id: "sub4",
-          name: "Prestige Event Management",
-          role: "Full Service",
-          progressPercentage: 100,
-          checkInStatus: "approved",
-          notes: "Event successfully completed. All equipment removed and venue cleaned",
-          lastUpdate: "2024-01-13 22:45",
-          avatar: "/placeholder.svg?key=us64g",
-        },
-      ],
-      currentStatus: "completed",
-      location: "Grand Ballroom Hotel",
-      startDate: "2024-01-12",
-      lastUpdate: "2024-01-13 22:45",
-      checkInStatus: "approved",
-      notes: "Event successfully completed. All equipment removed and venue cleaned",
-      progressPercentage: 100,
-    },
-    {
-      id: "5",
-      eventName: "Trade Show Exhibition",
-      subcontractors: [
-        {
-          id: "sub5a",
-          name: "Expo Masters Inc.",
-          role: "Booth Construction",
-          progressPercentage: 80,
-          checkInStatus: "approved",
-          notes: "Booth construction 80% complete, electrical work in progress",
-          lastUpdate: "2024-01-16 16:20",
-          avatar: "/expo-masters-inc-logo.png",
-        },
-        {
-          id: "sub5b",
-          name: "Digital Display Co.",
-          role: "Digital Signage",
-          progressPercentage: 70,
-          checkInStatus: "pending",
-          notes: "LED screens installed, content upload in progress",
-          lastUpdate: "2024-01-16 15:45",
-          avatar: "/digital-display-co-logo.png",
-        },
-      ],
-      currentStatus: "in-progress",
-      location: "Metro Exhibition Center",
-      startDate: "2024-01-16",
-      lastUpdate: "2024-01-16 16:20",
-      checkInStatus: "approved",
-      notes: "Booth construction 80% complete, electrical work in progress",
-      progressPercentage: 75,
-    },
-    {
-      id: "6",
-      eventName: "Birthday Party Setup",
-      subcontractors: [
-        {
-          id: "sub6",
-          name: "Party Perfect Solutions",
-          role: "Decoration",
-          progressPercentage: 45,
-          checkInStatus: "rejected",
-          notes: "Decoration setup needs revision - color scheme doesn't match client requirements",
-          lastUpdate: "2024-01-16 11:30",
-          avatar: "/placeholder.svg?key=90q4w",
-        },
-      ],
-      currentStatus: "review",
-      location: "Riverside Community Center",
-      startDate: "2024-01-15",
-      lastUpdate: "2024-01-16 11:30",
-      checkInStatus: "rejected",
-      notes: "Decoration setup needs revision - color scheme doesn't match client requirements",
-      progressPercentage: 45,
-    },
-    {
-      id: "7",
-      eventName: "Music Festival Stage",
-      subcontractors: [
-        {
-          id: "sub7",
-          name: "Sound & Stage Specialists",
-          role: "Stage & Audio",
-          progressPercentage: 70,
-          checkInStatus: "pending",
-          notes: "Main stage assembly complete, working on sound system calibration",
-          lastUpdate: "2024-01-16 13:15",
-          avatar: "/placeholder.svg?key=6369j",
-        },
-      ],
-      currentStatus: "in-progress",
-      location: "Central Park Amphitheater",
-      startDate: "2024-01-14",
-      lastUpdate: "2024-01-16 13:15",
-      checkInStatus: "pending",
-      notes: "Main stage assembly complete, working on sound system calibration",
-      progressPercentage: 70,
-    },
-    {
-      id: "8",
-      eventName: "Corporate Team Building",
-      subcontractors: [
-        {
-          id: "sub8",
-          name: "Adventure Events Co.",
-          role: "Activity Coordination",
-          progressPercentage: 15,
-          checkInStatus: "pending",
-          notes: "Weather conditions being monitored, equipment prep on standby",
-          lastUpdate: "2024-01-16 08:45",
-          avatar: "/placeholder.svg?key=49r9p",
-        },
-      ],
-      currentStatus: "pending",
-      location: "Outdoor Adventure Park",
-      startDate: "2024-01-18",
-      lastUpdate: "2024-01-16 08:45",
-      checkInStatus: "pending",
-      notes: "Weather conditions being monitored, equipment prep on standby",
-      progressPercentage: 15,
-    },
-    {
-      id: "9",
-      eventName: "Art Gallery Opening",
-      subcontractors: [
-        {
-          id: "sub9",
-          name: "Cultural Events Ltd.",
-          role: "Exhibition Setup",
-          progressPercentage: 100,
-          checkInStatus: "approved",
-          notes: "Successful opening event, all artwork properly displayed and secured",
-          lastUpdate: "2024-01-11 19:30",
-          avatar: "/placeholder.svg?key=j595x",
-        },
-      ],
-      currentStatus: "completed",
-      location: "Modern Art Museum",
-      startDate: "2024-01-10",
-      lastUpdate: "2024-01-11 19:30",
-      checkInStatus: "approved",
-      notes: "Successful opening event, all artwork properly displayed and secured",
-      progressPercentage: 100,
-    },
-    {
-      id: "10",
-      eventName: "Fashion Show Runway",
-      subcontractors: [
-        {
-          id: "sub10",
-          name: "Glamour Productions",
-          role: "Runway & Lighting",
-          progressPercentage: 85,
-          checkInStatus: "pending",
-          notes: "Runway construction complete, lighting setup requires client approval",
-          lastUpdate: "2024-01-16 15:45",
-          avatar: "/placeholder.svg?key=49r9p",
-        },
-      ],
-      currentStatus: "review",
-      location: "Fashion District Studio",
-      startDate: "2024-01-16",
-      lastUpdate: "2024-01-16 15:45",
-      checkInStatus: "pending",
-      notes: "Runway construction complete, lighting setup requires client approval",
-      progressPercentage: 85,
-    },
-    {
-      id: "11",
-      eventName: "Food Festival Booths",
-      subcontractors: [
-        {
-          id: "sub11a",
-          name: "Culinary Event Services",
-          role: "Booth Setup",
-          progressPercentage: 65,
-          checkInStatus: "approved",
-          notes: "60% of vendor booths assembled, electrical connections in progress",
-          lastUpdate: "2024-01-16 12:00",
-          avatar: "/culinary-event-services-logo.png",
-        },
-        {
-          id: "sub11b",
-          name: "Power Solutions Pro",
-          role: "Electrical",
-          progressPercentage: 55,
-          checkInStatus: "pending",
-          notes: "Main power distribution complete, individual booth connections ongoing",
-          lastUpdate: "2024-01-16 11:30",
-          avatar: "/power-solutions-pro-logo.png",
-        },
-      ],
-      currentStatus: "in-progress",
-      location: "City Square Plaza",
-      startDate: "2024-01-15",
-      lastUpdate: "2024-01-16 12:00",
-      checkInStatus: "approved",
-      notes: "60% of vendor booths assembled, electrical connections in progress",
-      progressPercentage: 60,
-    },
-    {
-      id: "12",
-      eventName: "Graduation Ceremony",
-      subcontractors: [
-        {
-          id: "sub12",
-          name: "Academic Events Pro",
-          role: "Ceremony Setup",
-          progressPercentage: 10,
-          checkInStatus: "pending",
-          notes: "Venue booking confirmed, equipment list being finalized",
-          lastUpdate: "2024-01-16 07:30",
-          avatar: "/placeholder.svg?key=49r9p",
-        },
-      ],
-      currentStatus: "pending",
-      location: "University Auditorium",
-      startDate: "2024-01-19",
-      lastUpdate: "2024-01-16 07:30",
-      checkInStatus: "pending",
-      notes: "Venue booking confirmed, equipment list being finalized",
-      progressPercentage: 10,
-    },
-  ])
-
+  const [events, setEvents] = useState([])
   const [selectedEvent, setSelectedEvent] = useState(null)
   const [selectedSubcontractor, setSelectedSubcontractor] = useState(null)
   const [showModal, setShowModal] = useState(false)
@@ -382,6 +55,43 @@ const EventTrackingAdmin = () => {
     notes: "",
     progressPercentage: 0,
   })
+
+  useEffect(() => {
+    fetchEventsProgress()
+  }, [])
+
+  const fetchEventsProgress = async () => {
+    try {
+      const token = localStorage.getItem("token")
+      const response = await axios.get("http://localhost:8080/api/transactions/events-progress", {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const eventsData = response.data.map((event) => ({
+        id: event.transactionId.toString(),
+        eventName: event.eventName,
+        subcontractors: event.subcontractorProgressDTOs.map((sub) => ({
+          id: sub.subcontractorId.toString(),
+          name: sub.subcontractorName,
+          role: sub.subcontractorRole,
+          progressPercentage: sub.progressPercentage,
+          checkInStatus: sub.checkInStatus,
+          notes: sub.notes,
+          lastUpdate: sub.lastUpdate,
+          avatar: "/placeholder.svg?key=" + sub.subcontractorId, // Placeholder avatar, replace with actual if available
+        })),
+        currentStatus: event.status.toLowerCase(),
+        location: event.location,
+        startDate: event.startDate,
+        lastUpdate: event.lastUpdate,
+        checkInStatus: getOverallCheckInStatus(event.subcontractorProgressDTOs),
+        notes: event.notes,
+        progressPercentage: calculateOverallProgress(event.subcontractorProgressDTOs),
+      }))
+      setEvents(eventsData)
+    } catch (error) {
+      console.error("Failed to fetch events progress:", error)
+    }
+  }
 
   const calculateOverallProgress = (subcontractors) => {
     if (subcontractors.length === 1) return subcontractors[0].progressPercentage
@@ -417,24 +127,40 @@ const EventTrackingAdmin = () => {
     setShowSubcontractorModal(true)
   }
 
-  const handleSubmitUpdate = () => {
+  const handleSubmitUpdate = async () => {
     if (selectedEvent) {
-      setEvents(
-        events.map((event) =>
-          event.id === selectedEvent.id
-            ? {
-                ...event,
-                currentStatus: updateData.status,
-                checkInStatus: updateData.checkInStatus,
-                notes: updateData.notes,
-                progressPercentage: updateData.progressPercentage,
-                lastUpdate: new Date().toLocaleString(),
-              }
-            : event,
-        ),
-      )
-      setShowModal(false)
-      setSelectedEvent(null)
+      try {
+        const token = localStorage.getItem("token")
+        await axios.put(
+          `http://localhost:8080/api/transactions/updateProgress/${selectedEvent.id}`,
+          null,
+          {
+            params: {
+              progressPercentage: updateData.progressPercentage,
+              message: updateData.notes,
+            },
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        )
+        setEvents(
+          events.map((event) =>
+            event.id === selectedEvent.id
+              ? {
+                  ...event,
+                  currentStatus: updateData.status,
+                  checkInStatus: updateData.checkInStatus,
+                  notes: updateData.notes,
+                  progressPercentage: updateData.progressPercentage,
+                  lastUpdate: new Date().toLocaleString(),
+                }
+              : event,
+          ),
+        )
+        setShowModal(false)
+        setSelectedEvent(null)
+      } catch (error) {
+        console.error("Failed to update event progress:", error)
+      }
     }
   }
 
@@ -544,32 +270,49 @@ const EventTrackingAdmin = () => {
     setShowIndividualUpdateModal(true)
   }
 
-  const handleSubmitSubcontractorUpdate = () => {
+  const handleSubmitSubcontractorUpdate = async () => {
     if (selectedEvent && selectedSubcontractor) {
-      setEvents(
-        events.map((event) =>
-          event.id === selectedEvent.id
-            ? {
-                ...event,
-                subcontractors: event.subcontractors.map((sub) =>
-                  sub.id === selectedSubcontractor.id
-                    ? {
-                        ...sub,
-                        checkInStatus: updateData.checkInStatus,
-                        notes: updateData.notes,
-                        progressPercentage: updateData.progressPercentage,
-                        lastUpdate: new Date().toLocaleString(),
-                      }
-                    : sub,
-                ),
-                lastUpdate: new Date().toLocaleString(),
-              }
-            : event,
-        ),
-      )
-      setShowIndividualUpdateModal(false)
-      setSelectedEvent(null)
-      setSelectedSubcontractor(null)
+      try {
+        const token = localStorage.getItem("token")
+        await axios.put(
+          `http://localhost:8080/api/transactions/subcontractor-progress/${selectedEvent.id}/${selectedSubcontractor.id}`,
+          null,
+          {
+            params: {
+              progressPercentage: updateData.progressPercentage,
+              checkInStatus: updateData.checkInStatus,
+              notes: updateData.notes,
+            },
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        )
+        setEvents(
+          events.map((event) =>
+            event.id === selectedEvent.id
+              ? {
+                  ...event,
+                  subcontractors: event.subcontractors.map((sub) =>
+                    sub.id === selectedSubcontractor.id
+                      ? {
+                          ...sub,
+                          checkInStatus: updateData.checkInStatus,
+                          notes: updateData.notes,
+                          progressPercentage: updateData.progressPercentage,
+                          lastUpdate: new Date().toLocaleString(),
+                        }
+                      : sub,
+                  ),
+                  lastUpdate: new Date().toLocaleString(),
+                }
+              : event,
+          ),
+        )
+        setShowIndividualUpdateModal(false)
+        setSelectedEvent(null)
+        setSelectedSubcontractor(null)
+      } catch (error) {
+        console.error("Failed to update subcontractor progress:", error)
+      }
     }
   }
 
@@ -598,6 +341,7 @@ const EventTrackingAdmin = () => {
                 backgroundColor: "#FFB22C",
                 "&:hover": { backgroundColor: "#e6a028" },
               }}
+              onClick={fetchEventsProgress}
             >
               Refresh Status
             </Button>
@@ -692,6 +436,7 @@ const EventTrackingAdmin = () => {
                               },
                             }}
                           >
+                            View All ({event.subcontractors.length})
                           </Button>
                         )}
                       </Box>

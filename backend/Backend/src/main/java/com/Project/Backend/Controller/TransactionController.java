@@ -3,6 +3,7 @@ package com.Project.Backend.Controller;
 import com.Project.Backend.DTO.*;
 import com.Project.Backend.Entity.TransactionProgressEntity;
 import com.Project.Backend.Entity.TransactionsEntity;
+import com.Project.Backend.Entity.SubcontractorProgressEntity;
 import com.Project.Backend.Entity.UserEntity;
 import com.Project.Backend.Repository.UserRepository;
 import com.Project.Backend.Service.TokenService;
@@ -550,6 +551,66 @@ public ResponseEntity<?> getCurrentUserReservations(@RequestHeader("Authorizatio
                 "success", false,
                 "message", "Progress history not found: " + e.getMessage()
             ));
+        }
+    }
+
+    // ==================== SUBCONTRACTOR PROGRESS ENDPOINTS ====================
+
+    /**
+     * Update subcontractor progress
+     */
+    @PutMapping("/subcontractor-progress/{transactionId}/{subcontractorId}")
+    public ResponseEntity<?> updateSubcontractorProgress(
+            @PathVariable int transactionId,
+            @PathVariable int subcontractorId,
+            @RequestParam int progressPercentage,
+            @RequestParam String checkInStatus,
+            @RequestParam(required = false) String notes) {
+        try {
+            SubcontractorProgressEntity updatedProgress = transactionProgressService.updateSubcontractorProgress(
+                transactionId, subcontractorId, progressPercentage, checkInStatus, notes);
+            return ResponseEntity.ok(updatedProgress);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    /**
+     * Get all subcontractor progress for a transaction
+     */
+    @GetMapping("/subcontractor-progress/{transactionId}")
+    public ResponseEntity<List<SubcontractorProgressDTO>> getSubcontractorProgress(@PathVariable int transactionId) {
+        try {
+            List<SubcontractorProgressDTO> progress = transactionProgressService.getSubcontractorProgressDTOs(transactionId);
+            return ResponseEntity.ok(progress);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    /**
+     * Get event progress with subcontractors
+     */
+    @GetMapping("/event-progress/{transactionId}")
+    public ResponseEntity<EventProgressDTO> getEventProgress(@PathVariable int transactionId) {
+        try {
+            EventProgressDTO eventProgress = transactionProgressService.getEventProgress(transactionId);
+            return ResponseEntity.ok(eventProgress);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    /**
+     * Get all events progress
+     */
+    @GetMapping("/events-progress")
+    public ResponseEntity<List<EventProgressDTO>> getAllEventsProgress() {
+        try {
+            List<EventProgressDTO> eventsProgress = transactionProgressService.getAllEventsProgress();
+            return ResponseEntity.ok(eventsProgress);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(null);
         }
     }
 }
