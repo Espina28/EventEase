@@ -66,6 +66,9 @@ public class TransactionService {
     @Autowired
     private BookingRejectionNoteService bookingRejectionNoteService;
 
+    @Autowired
+    private TransactionProgressService transactionProgressService;
+
 
     public TransactionsEntity create(CreateTransactionDTO createTransactionDTO) {
         try{
@@ -110,6 +113,7 @@ public class TransactionService {
         return subcontractors;
     };
 
+    @Transactional
     public TransactionsEntity validateTransaction(int id, String status, CreateBookingRejectionNoteDTO reason){
         TransactionsEntity transaction = transactionRepo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Transaction with id " + id + " not found"));
@@ -117,6 +121,13 @@ public class TransactionService {
             case "APPROVED":
                     transaction.setTransactionStatus(TransactionsEntity.Status.ONGOING);
                     transaction.setTransactionisApprove(true);
+                    // Create initial progress record when transaction is approved
+                    try {
+                        transactionProgressService.createInitialProgress(transaction);
+                    } catch (Exception e) {
+                        System.out.println("Warning: Failed to create progress record: " + e.getMessage());
+                        // Continue even if progress creation fails
+                    }
                     break;
             case "CANCELLED":
                     transaction.setTransactionStatus(TransactionsEntity.Status.CANCELLED);
@@ -332,9 +343,10 @@ public class TransactionService {
             }
             
             // 4. Upload payment proof to S3
+            // TEMPORARY WORKAROUND: S3 is currently offline, allow transaction creation without upload
             String paymentReceiptUrl = null;
             if (paymentProof != null && !paymentProof.isEmpty()) {
-                System.out.println("Uploading payment proof to S3...");
+                System.out.println("Attempting to upload payment proof to S3...");
                 try {
                     File convFile = File.createTempFile("payment_proof", paymentProof.getOriginalFilename());
                     paymentProof.transferTo(convFile);
@@ -342,8 +354,10 @@ public class TransactionService {
                     convFile.delete();
                     System.out.println("Payment proof uploaded successfully: " + paymentReceiptUrl);
                 } catch (Exception e) {
-                    System.out.println("ERROR: Failed to upload payment proof: " + e.getMessage());
-                    throw new IOException("Failed to upload payment proof: " + e.getMessage());
+                    System.out.println("WARNING: S3 upload failed (temporary workaround - proceeding without receipt): " + e.getMessage());
+                    System.out.println("Transaction will be created without payment receipt URL due to S3 being offline");
+                    // Continue without throwing exception - this is a temporary workaround
+                    paymentReceiptUrl = null;
                 }
             }
             
@@ -519,9 +533,10 @@ public class TransactionService {
             System.out.println("Found package: " + packageEntity.getPackageName());
 
             // 4. Upload payment proof to S3
+            // TEMPORARY WORKAROUND: S3 is currently offline, allow transaction creation without upload
             String paymentReceiptUrl = null;
             if (paymentProof != null && !paymentProof.isEmpty()) {
-                System.out.println("Uploading payment proof to S3...");
+                System.out.println("Attempting to upload payment proof to S3...");
                 try {
                     File convFile = File.createTempFile("payment_proof_package", paymentProof.getOriginalFilename());
                     paymentProof.transferTo(convFile);
@@ -529,8 +544,10 @@ public class TransactionService {
                     convFile.delete();
                     System.out.println("Payment proof uploaded successfully: " + paymentReceiptUrl);
                 } catch (Exception e) {
-                    System.out.println("ERROR: Failed to upload payment proof: " + e.getMessage());
-                    throw new IOException("Failed to upload payment proof: " + e.getMessage());
+                    System.out.println("WARNING: S3 upload failed (temporary workaround - proceeding without receipt): " + e.getMessage());
+                    System.out.println("Package booking will be created without payment receipt URL due to S3 being offline");
+                    // Continue without throwing exception - this is a temporary workaround
+                    paymentReceiptUrl = null;
                 }
             }
 

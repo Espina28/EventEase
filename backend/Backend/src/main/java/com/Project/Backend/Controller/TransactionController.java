@@ -1,10 +1,12 @@
 package com.Project.Backend.Controller;
 
 import com.Project.Backend.DTO.*;
+import com.Project.Backend.Entity.TransactionProgressEntity;
 import com.Project.Backend.Entity.TransactionsEntity;
 import com.Project.Backend.Entity.UserEntity;
 import com.Project.Backend.Repository.UserRepository;
 import com.Project.Backend.Service.TokenService;
+import com.Project.Backend.Service.TransactionProgressService;
 import com.Project.Backend.Service.TransactionService;
 import com.Project.Backend.Service.UserService;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -19,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/transactions")
@@ -32,6 +35,9 @@ public class TransactionController {
 
     @Autowired
     private final UserRepository userRepository;
+
+    @Autowired
+    private TransactionProgressService transactionProgressService;
 
 
     @Autowired
@@ -116,7 +122,7 @@ public class TransactionController {
     @GetMapping("/getPaymentAndSubcontractors/{transactionId}")
     public ResponseEntity<TransactionPaymentAndSubcontractorsDTO> findAllJoinedWIthPaymentAndSubcontractorsByTransactionId(@PathVariable int transactionId) {
         TransactionPaymentAndSubcontractorsDTO transactions = transactionService.findAllJoinedWIthPaymentAndSubcontractorsByTransactionId(transactionId);
-        if (transactions != null) {
+        if (transactions == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
         }
         return ResponseEntity.ok(transactions);
@@ -483,5 +489,67 @@ public ResponseEntity<?> getCurrentUserReservations(@RequestHeader("Authorizatio
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
         }
         return ResponseEntity.ok(dates);
+    }
+    @PutMapping("/updateProgress/{transactionId}")
+    public ResponseEntity<?> updateTransactionProgress(
+            @PathVariable int transactionId,
+            @RequestParam int progressPercentage,
+            @RequestParam(required = false) String message) {
+        try {
+            TransactionProgressEntity updatedProgress = transactionProgressService.updateProgress(transactionId, progressPercentage, message);
+            TransactionProgressDTO progressDTO = new TransactionProgressDTO(
+                updatedProgress.getTransaction().getTransaction_Id(),
+                updatedProgress.getCurrentProgress(),
+                updatedProgress.getProgressNote(),
+                updatedProgress.getStatus().toString(),
+                updatedProgress.getCreatedAt(),
+                updatedProgress.getUpdatedAt()
+            );
+            return ResponseEntity.ok(progressDTO);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+    
+    @GetMapping("/progress/{transactionId}")
+    public ResponseEntity<?> getTransactionProgress(@PathVariable int transactionId) {
+        try {
+            TransactionProgressEntity progressEntity = transactionProgressService.getProgressByTransactionId(transactionId)
+                .orElseThrow(() -> new RuntimeException("Progress not found for transaction ID: " + transactionId));
+            TransactionProgressDTO progressDTO = new TransactionProgressDTO(
+                progressEntity.getTransaction().getTransaction_Id(),
+                progressEntity.getCurrentProgress(),
+                progressEntity.getProgressNote(),
+                progressEntity.getStatus().toString(),
+                progressEntity.getCreatedAt(),
+                progressEntity.getUpdatedAt()
+            );
+            return ResponseEntity.ok(progressDTO);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping("/progress/all/{transactionId}")
+    public ResponseEntity<?> getAllProgressHistory(@PathVariable int transactionId) {
+        try {
+            List<TransactionProgressEntity> progressHistory = transactionProgressService.getProgressHistory(transactionId);
+            List<TransactionProgressDTO> progressDTOs = progressHistory.stream()
+                .map(progress -> new TransactionProgressDTO(
+                    progress.getTransaction().getTransaction_Id(),
+                    progress.getCurrentProgress(),
+                    progress.getProgressNote(),
+                    progress.getStatus().toString(),
+                    progress.getCreatedAt(),
+                    progress.getUpdatedAt()
+                ))
+                .collect(Collectors.toList());
+            return ResponseEntity.ok(progressDTOs);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                "success", false,
+                "message", "Progress history not found: " + e.getMessage()
+            ));
+        }
     }
 }

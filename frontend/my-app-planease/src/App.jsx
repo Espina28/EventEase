@@ -31,6 +31,7 @@ import PaymentProofPagePackage from './Pages/booking-pages/paymentproof-page-pac
 import PreviewBookingPagePackage from './Pages/booking-pages/previewbooking-page-package.jsx'
 import AdminPackages from './Pages/admin-pages/admin-your-packages.jsx'
 import UserBookingsPage from './Pages/user-bookings.jsx'
+import EventTrackingAdmin from './Pages/admin-pages/admin-eventprogress.jsx'
 
 function App() {
   return (
@@ -151,6 +152,11 @@ function App() {
                  <AdminProtectedRoute>
                 < AdminPackages/>
                  </AdminProtectedRoute>
+            }/>
+              <Route path="/admin/eventprogress" element={
+                 // <AdminProtectedRoute>
+                < EventTrackingAdmin/>
+                // </AdminProtectedRoute>
             }/>
           
           <Route path="/home" element={
