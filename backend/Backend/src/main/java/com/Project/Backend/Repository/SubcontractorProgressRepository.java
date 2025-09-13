@@ -2,6 +2,7 @@ package com.Project.Backend.Repository;
 
 import com.Project.Backend.Entity.SubcontractorProgressEntity;
 import com.Project.Backend.Entity.TransactionsEntity;
+import com.Project.Backend.Entity.TransactionProgressEntity;
 import com.Project.Backend.Entity.SubcontractorEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -15,26 +16,26 @@ import java.util.Optional;
 public interface SubcontractorProgressRepository extends JpaRepository<SubcontractorProgressEntity, Integer> {
 
     /**
-     * Find all subcontractor progress for a specific transaction
+     * Find all subcontractor progress for a specific transaction progress
      */
-    List<SubcontractorProgressEntity> findByTransaction(TransactionsEntity transaction);
+    List<SubcontractorProgressEntity> findByTransactionProgress(TransactionProgressEntity transactionProgress);
 
     /**
      * Find subcontractor progress by transaction ID
      */
-    @Query("SELECT sp FROM SubcontractorProgressEntity sp WHERE sp.transaction.transaction_Id = :transactionId")
+    @Query("SELECT sp FROM SubcontractorProgressEntity sp WHERE sp.transactionProgress.transaction.transaction_Id = :transactionId")
     List<SubcontractorProgressEntity> findByTransactionId(@Param("transactionId") int transactionId);
 
     /**
      * Find subcontractor progress by transaction ID and subcontractor ID
      */
-    @Query("SELECT sp FROM SubcontractorProgressEntity sp WHERE sp.transaction.transaction_Id = :transactionId AND sp.subcontractor.subcontractor_Id = :subcontractorId")
+    @Query("SELECT sp FROM SubcontractorProgressEntity sp WHERE sp.transactionProgress.transaction.transaction_Id = :transactionId AND sp.subcontractor.subcontractor_Id = :subcontractorId")
     Optional<SubcontractorProgressEntity> findByTransactionIdAndSubcontractorId(@Param("transactionId") int transactionId, @Param("subcontractorId") int subcontractorId);
 
     /**
-     * Check if subcontractor progress exists for a transaction
+     * Check if subcontractor progress exists for a transaction progress
      */
-    boolean existsByTransaction(TransactionsEntity transaction);
+    boolean existsByTransactionProgress(TransactionProgressEntity transactionProgress);
 
     /**
      * Find all subcontractor progress for a specific subcontractor
@@ -46,4 +47,10 @@ public interface SubcontractorProgressRepository extends JpaRepository<Subcontra
      */
     @Query("SELECT sp FROM SubcontractorProgressEntity sp WHERE sp.subcontractor.subcontractor_Id = :subcontractorId")
     List<SubcontractorProgressEntity> findBySubcontractorId(@Param("subcontractorId") int subcontractorId);
+
+    /**
+     * Find subcontractor progress by user email
+     */
+    @Query("SELECT sp FROM SubcontractorProgressEntity sp WHERE sp.subcontractor.user.email = :userEmail")
+    List<SubcontractorProgressEntity> findByUserEmail(@Param("userEmail") String userEmail);
 }

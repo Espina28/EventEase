@@ -12,6 +12,7 @@ public class SubcontractorProgressDTO {
     private int progressPercentage;
     private String checkInStatus;
     private String progressNotes;
+    private String progressImageUrl;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -29,6 +30,25 @@ public class SubcontractorProgressDTO {
         this.progressPercentage = progressPercentage;
         this.checkInStatus = checkInStatus;
         this.progressNotes = progressNotes;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
+    }
+
+    // Constructor for full subcontractor progress data with image URL
+    public SubcontractorProgressDTO(int subcontractorProgressId, int transactionId, int subcontractorId,
+                                  String subcontractorName, String subcontractorRole, String subcontractorAvatar,
+                                  int progressPercentage, String checkInStatus, String progressNotes, String progressImageUrl,
+                                  LocalDateTime createdAt, LocalDateTime updatedAt) {
+        this.subcontractorProgressId = subcontractorProgressId;
+        this.transactionId = transactionId;
+        this.subcontractorId = subcontractorId;
+        this.subcontractorName = subcontractorName;
+        this.subcontractorRole = subcontractorRole;
+        this.subcontractorAvatar = subcontractorAvatar;
+        this.progressPercentage = progressPercentage;
+        this.checkInStatus = checkInStatus;
+        this.progressNotes = progressNotes;
+        this.progressImageUrl = progressImageUrl;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
@@ -117,6 +137,14 @@ public class SubcontractorProgressDTO {
 
     public void setProgressNotes(String progressNotes) {
         this.progressNotes = progressNotes;
+    }
+
+    public String getProgressImageUrl() {
+        return progressImageUrl;
+    }
+
+    public void setProgressImageUrl(String progressImageUrl) {
+        this.progressImageUrl = progressImageUrl;
     }
 
     public LocalDateTime getCreatedAt() {

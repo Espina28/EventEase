@@ -63,33 +63,34 @@ const EventTrackingAdmin = () => {
   const fetchEventsProgress = async () => {
     try {
       const token = localStorage.getItem("token")
-      const response = await axios.get("http://localhost:8080/api/transactions/events-progress", {
+      // Fetch all transactions for admin (no email filter)
+      const response = await axios.get("http://localhost:8080/api/transactions/getAllTransactions", {
         headers: { Authorization: `Bearer ${token}` },
       })
-      const eventsData = response.data.map((event) => ({
-        id: event.transactionId.toString(),
-        eventName: event.eventName,
-        subcontractors: event.subcontractorProgressDTOs.map((sub) => ({
-          id: sub.subcontractorId.toString(),
+      const eventsData = response.data.map((transaction) => ({
+        id: transaction.transaction_Id.toString(),
+        eventName: transaction.eventName || transaction.packages || "N/A",
+        subcontractors: transaction.subcontractors.map((sub) => ({
+          id: sub.subcontractorUserId.toString(),
           name: sub.subcontractorName,
-          role: sub.subcontractorRole,
-          progressPercentage: sub.progressPercentage,
-          checkInStatus: sub.checkInStatus,
-          notes: sub.notes,
-          lastUpdate: sub.lastUpdate,
-          avatar: "/placeholder.svg?key=" + sub.subcontractorId, // Placeholder avatar, replace with actual if available
+          role: sub.serviceCategory,
+          progressPercentage: sub.progressPercentage || 0,
+          checkInStatus: sub.checkInStatus || "pending",
+          notes: sub.notes || "",
+          lastUpdate: sub.lastUpdate || "",
+          avatar: "/placeholder.svg?key=" + sub.subcontractorUserId, // Placeholder avatar, replace with actual if available
         })),
-        currentStatus: event.status.toLowerCase(),
-        location: event.location,
-        startDate: event.startDate,
-        lastUpdate: event.lastUpdate,
-        checkInStatus: getOverallCheckInStatus(event.subcontractorProgressDTOs),
-        notes: event.notes,
-        progressPercentage: calculateOverallProgress(event.subcontractorProgressDTOs),
+        currentStatus: transaction.transactionStatus.toLowerCase(),
+        location: transaction.transactionVenue || "N/A",
+        startDate: transaction.transactionDate || "",
+        lastUpdate: transaction.lastUpdate || "",
+        checkInStatus: getOverallCheckInStatus(transaction.subcontractors),
+        notes: transaction.transactionNote || "",
+        progressPercentage: calculateOverallProgress(transaction.subcontractors),
       }))
       setEvents(eventsData)
     } catch (error) {
-      console.error("Failed to fetch events progress:", error)
+      console.error("Failed to fetch all transactions for admin:", error)
     }
   }
 

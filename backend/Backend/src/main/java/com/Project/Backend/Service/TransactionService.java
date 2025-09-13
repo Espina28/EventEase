@@ -96,10 +96,10 @@ public class TransactionService {
     }
 
     //connecting the transactions and the chosen services of subcontractors in event_service table;
-    public List<SubcontractorEntity> assignedEventService(List<Integer> sucontractorsId, TransactionsEntity transactions){
+    public List<SubcontractorEntity> assignedEventService(List<Integer> subcontractorsId, TransactionsEntity transactions){
         List<SubcontractorEntity> subcontractors = new ArrayList<>();
 
-        for(int subcontractorid: sucontractorsId){
+        for(int subcontractorid: subcontractorsId){
             SubcontractorEntity subcontractorEntity = subcontractorService.getSubcontractorById(subcontractorid);
             if(subcontractorEntity == null){
                 throw new RuntimeException("Subcontractor with id " + subcontractorid + " not found");
@@ -124,8 +124,10 @@ public class TransactionService {
                     // Create initial progress record when transaction is approved
                     try {
                         transactionProgressService.createInitialProgress(transaction);
+                        // Also create initial subcontractor progress records
+                        transactionProgressService.createInitialSubcontractorProgress(transaction);
                     } catch (Exception e) {
-                        System.out.println("Warning: Failed to create progress record: " + e.getMessage());
+                        System.out.println("Warning: Failed to create progress records: " + e.getMessage());
                         // Continue even if progress creation fails
                     }
                     break;
@@ -279,9 +281,9 @@ public class TransactionService {
     }
 
     //revise this, it must accomodate the subcontactors of packages
-    public TransactionPaymentAndSubcontractorsDTO findAllJoinedWIthPaymentAndSubcontractorsByTransactionId(int transcationId) {
-        TransactionPaymentAndSubcontractorsDTO existingTransactions = transactionRepo.findAllJoinedWIthPaymentAndSubcontractorsByTransactionId(transcationId);
-        existingTransactions.setSubcontractors(getSubcontractorsOfEvent(eventServiceService.getByTransactionId(transcationId)));
+    public TransactionPaymentAndSubcontractorsDTO findAllJoinedWIthPaymentAndSubcontractorsByTransactionId(int transactionId) {
+        TransactionPaymentAndSubcontractorsDTO existingTransactions = transactionRepo.findAllJoinedWIthPaymentAndSubcontractorsByTransactionId(transactionId);
+        existingTransactions.setSubcontractors(getSubcontractorsOfEvent(eventServiceService.getByTransactionId(transactionId)));
         return existingTransactions;
     }
 
@@ -343,7 +345,6 @@ public class TransactionService {
             }
             
             // 4. Upload payment proof to S3
-            // TEMPORARY WORKAROUND: S3 is currently offline, allow transaction creation without upload
             String paymentReceiptUrl = null;
             if (paymentProof != null && !paymentProof.isEmpty()) {
                 System.out.println("Attempting to upload payment proof to S3...");
@@ -354,10 +355,8 @@ public class TransactionService {
                     convFile.delete();
                     System.out.println("Payment proof uploaded successfully: " + paymentReceiptUrl);
                 } catch (Exception e) {
-                    System.out.println("WARNING: S3 upload failed (temporary workaround - proceeding without receipt): " + e.getMessage());
-                    System.out.println("Transaction will be created without payment receipt URL due to S3 being offline");
-                    // Continue without throwing exception - this is a temporary workaround
-                    paymentReceiptUrl = null;
+                    System.out.println("ERROR: S3 upload failed: " + e.getMessage());
+                    throw e;
                 }
             }
             
@@ -533,7 +532,6 @@ public class TransactionService {
             System.out.println("Found package: " + packageEntity.getPackageName());
 
             // 4. Upload payment proof to S3
-            // TEMPORARY WORKAROUND: S3 is currently offline, allow transaction creation without upload
             String paymentReceiptUrl = null;
             if (paymentProof != null && !paymentProof.isEmpty()) {
                 System.out.println("Attempting to upload payment proof to S3...");
@@ -544,10 +542,8 @@ public class TransactionService {
                     convFile.delete();
                     System.out.println("Payment proof uploaded successfully: " + paymentReceiptUrl);
                 } catch (Exception e) {
-                    System.out.println("WARNING: S3 upload failed (temporary workaround - proceeding without receipt): " + e.getMessage());
-                    System.out.println("Package booking will be created without payment receipt URL due to S3 being offline");
-                    // Continue without throwing exception - this is a temporary workaround
-                    paymentReceiptUrl = null;
+                    System.out.println("ERROR: S3 upload failed: " + e.getMessage());
+                    throw e;
                 }
             }
 
@@ -654,6 +650,15 @@ public class TransactionService {
             case "APPROVED":
                 transaction.setTransactionStatus(TransactionsEntity.Status.ONGOING);
                 transaction.setTransactionisApprove(true);
+                // Create initial progress record when transaction is approved
+                try {
+                    transactionProgressService.createInitialProgress(transaction);
+                    // Also create initial subcontractor progress records
+                    transactionProgressService.createInitialSubcontractorProgress(transaction);
+                } catch (Exception e) {
+                    System.out.println("Warning: Failed to create progress records: " + e.getMessage());
+                    // Continue even if progress creation fails
+                }
                 break;
             case "CANCELLED":
                 transaction.setTransactionStatus(TransactionsEntity.Status.CANCELLED);
@@ -684,6 +689,36 @@ public class TransactionService {
                     Map<String, Object> transactionData = new HashMap<>();
                     transactionData.put("transactionId", t.getTransaction_Id());
                     transactionData.put("transactionDate", t.getTransactionDate());
+                    return transactionData;
+                })
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Get all transactions assigned to a subcontractor
+     */
+    public List<Map<String, Object>> getTransactionsBySubcontractorId(int subcontractorId) {
+        System.out.println("Getting transactions for subcontractor ID: " + subcontractorId);
+
+        // Get all transactions where this subcontractor is assigned
+        List<TransactionsEntity> transactions = transactionRepo.findTransactionsBySubcontractorId(subcontractorId);
+
+        System.out.println("Found " + transactions.size() + " transactions for subcontractor");
+
+        return transactions.stream()
+                .filter(t -> t.getTransactionIsActive() &&
+                        (t.getTransactionStatus() == TransactionsEntity.Status.ONGOING))
+                .map(t -> {
+                    Map<String, Object> transactionData = new HashMap<>();
+                    transactionData.put("transactionId", t.getTransaction_Id());
+                    transactionData.put("eventName", t.getEvent() != null ? t.getEvent().getEvent_name() :
+                                                     (t.getPackages() != null ? t.getPackages().getPackageName() : "Unknown Event"));
+                    transactionData.put("location", t.getTransactionVenue());
+                    transactionData.put("startDate", t.getTransactionDate());
+                    transactionData.put("status", t.getTransactionStatus().toString());
+                    transactionData.put("progressPercentage", 0); // Will be updated from progress service
+                    transactionData.put("checkInStatus", "PENDING"); // Will be updated from progress service
+                    transactionData.put("lastUpdate", null); // Will be updated from progress service
                     return transactionData;
                 })
                 .collect(Collectors.toList());

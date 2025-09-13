@@ -172,7 +172,9 @@ public class TransactionProgressService {
 
                 if (existingProgress.isEmpty()) {
                     SubcontractorProgressEntity progress = new SubcontractorProgressEntity(
-                        transaction,
+                        // Need to get TransactionProgressEntity for this transaction
+                        transactionProgressRepository.findByTransactionId(transaction.getTransaction_Id())
+                            .orElseThrow(() -> new RuntimeException("TransactionProgress not found for transaction ID: " + transaction.getTransaction_Id())),
                         subcontractor,
                         0, // Initial progress is 0%
                         "Subcontractor assigned to event"
@@ -187,7 +189,7 @@ public class TransactionProgressService {
      * Update subcontractor progress
      */
     public SubcontractorProgressEntity updateSubcontractorProgress(int transactionId, int subcontractorId,
-                                                                 int progressPercentage, String checkInStatus, String notes) {
+                                                                 int progressPercentage, String checkInStatus, String notes, String imageUrl) {
         Optional<SubcontractorProgressEntity> existingProgress =
             subcontractorProgressRepository.findByTransactionIdAndSubcontractorId(transactionId, subcontractorId);
 
@@ -211,6 +213,10 @@ public class TransactionProgressService {
             progress.setProgressNotes(notes);
         }
 
+        if (imageUrl != null && !imageUrl.trim().isEmpty()) {
+            progress.setProgressImageUrl(imageUrl);
+        }
+
         return subcontractorProgressRepository.save(progress);
     }
 
@@ -230,7 +236,7 @@ public class TransactionProgressService {
         return progressEntities.stream()
             .map(entity -> new SubcontractorProgressDTO(
                 entity.getSubcontractorProgressId(),
-                entity.getTransaction().getTransaction_Id(),
+                entity.getTransactionProgress().getTransaction().getTransaction_Id(),
                 entity.getSubcontractor().getSubcontractor_Id(),
                 entity.getSubcontractor().getUser() != null ?
                     entity.getSubcontractor().getUser().getFirstname() + " " +
@@ -241,6 +247,7 @@ public class TransactionProgressService {
                 entity.getProgressPercentage(),
                 entity.getCheckInStatus().toString(),
                 entity.getProgressNotes(),
+                entity.getProgressImageUrl(),
                 entity.getCreatedAt(),
                 entity.getUpdatedAt()
             ))
@@ -304,5 +311,64 @@ public class TransactionProgressService {
         // This would typically get all transactions and convert them to EventProgressDTO
         // For now, return empty list - would need to be implemented based on actual transaction data
         return List.of();
+    }
+
+    /**
+     * Get subcontractor progress by user email
+     */
+    public List<SubcontractorProgressDTO> getSubcontractorProgressByUserEmail(String userEmail) {
+        List<SubcontractorProgressEntity> progressEntities = subcontractorProgressRepository.findByUserEmail(userEmail);
+
+        return progressEntities.stream()
+            .map(entity -> new SubcontractorProgressDTO(
+                entity.getSubcontractorProgressId(),
+                entity.getTransactionProgress().getTransaction().getTransaction_Id(),
+                entity.getSubcontractor().getSubcontractor_Id(),
+                entity.getSubcontractor().getUser() != null ?
+                    entity.getSubcontractor().getUser().getFirstname() + " " +
+                    entity.getSubcontractor().getUser().getLastname() :
+                    entity.getSubcontractor().getSubcontractor_serviceName(),
+                entity.getSubcontractor().getSubcontractor_serviceCategory(),
+                "/placeholder.svg", // Default avatar
+                entity.getProgressPercentage(),
+                entity.getCheckInStatus().toString(),
+                entity.getProgressNotes(),
+                entity.getProgressImageUrl(),
+                entity.getCreatedAt(),
+                entity.getUpdatedAt()
+            ))
+            .collect(Collectors.toList());
+    }
+
+    /**
+     * Check if subcontractor progress exists by email
+     */
+    public boolean checkIfExistsByEmail(int transactionId, String userEmail) {
+        // Find subcontractor by email
+        SubcontractorEntity subcontractor = subContractorRepository.findByEmail(userEmail);
+        if (subcontractor == null) {
+            return false;
+        }
+
+        // Check if progress exists
+        Optional<SubcontractorProgressEntity> existingProgress =
+            subcontractorProgressRepository.findByTransactionIdAndSubcontractorId(transactionId, subcontractor.getSubcontractor_Id());
+
+        return existingProgress.isPresent();
+    }
+
+    /**
+     * Update subcontractor progress by email
+     */
+    public SubcontractorProgressEntity updateSubcontractorProgressByEmail(int transactionId, String userEmail,
+                                                                         int progressPercentage, String checkInStatus, String notes, String imageUrl) {
+        // Find subcontractor by email
+        SubcontractorEntity subcontractor = subContractorRepository.findByEmail(userEmail);
+        if (subcontractor == null) {
+            throw new RuntimeException("Subcontractor not found for email: " + userEmail);
+        }
+
+        // Use existing update method
+        return updateSubcontractorProgress(transactionId, subcontractor.getSubcontractor_Id(), progressPercentage, checkInStatus, notes, imageUrl);
     }
 }

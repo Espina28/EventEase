@@ -1,8 +1,10 @@
 package com.Project.Backend.Entity;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "transaction_progress")
@@ -16,6 +18,10 @@ public class TransactionProgressEntity {
     @JoinColumn(name = "transaction_id", nullable = false)
     @JsonBackReference(value = "transaction-progress")
     private TransactionsEntity transaction;
+
+    @OneToMany(mappedBy = "transactionProgress", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonManagedReference(value = "transaction-progress-subcontractor-progress")
+    private List<SubcontractorProgressEntity> subcontractorProgresses;
 
     @Column(nullable = false)
     private int currentProgress; // 0-100 percentage
@@ -131,5 +137,13 @@ public class TransactionProgressEntity {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public List<SubcontractorProgressEntity> getSubcontractorProgresses() {
+        return subcontractorProgresses;
+    }
+
+    public void setSubcontractorProgresses(List<SubcontractorProgressEntity> subcontractorProgresses) {
+        this.subcontractorProgresses = subcontractorProgresses;
     }
 }

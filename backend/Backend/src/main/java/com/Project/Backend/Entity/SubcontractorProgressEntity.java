@@ -13,9 +13,9 @@ public class SubcontractorProgressEntity {
     private int subcontractorProgressId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "transaction_id", nullable = false)
-    @JsonBackReference(value = "transaction-subcontractor-progress")
-    private TransactionsEntity transaction;
+    @JoinColumn(name = "transaction_progress_id", nullable = false)
+    @JsonBackReference(value = "transaction-progress-subcontractor-progress")
+    private TransactionProgressEntity transactionProgress;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "subcontractor_id", nullable = false)
@@ -31,6 +31,9 @@ public class SubcontractorProgressEntity {
     @Column(columnDefinition = "TEXT")
     private String progressNotes;
 
+    @Column(columnDefinition = "TEXT")
+    private String progressImageUrl;
+
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
@@ -39,6 +42,7 @@ public class SubcontractorProgressEntity {
 
     public enum CheckInStatus {
         PENDING,
+        SUBMITTED_FOR_REVIEW,
         APPROVED,
         REJECTED
     }
@@ -60,9 +64,9 @@ public class SubcontractorProgressEntity {
     // Constructors
     public SubcontractorProgressEntity() {}
 
-    public SubcontractorProgressEntity(TransactionsEntity transaction, SubcontractorEntity subcontractor,
+    public SubcontractorProgressEntity(TransactionProgressEntity transactionProgress, SubcontractorEntity subcontractor,
                                      int progressPercentage, String progressNotes) {
-        this.transaction = transaction;
+        this.transactionProgress = transactionProgress;
         this.subcontractor = subcontractor;
         this.progressPercentage = progressPercentage;
         this.progressNotes = progressNotes;
@@ -77,12 +81,12 @@ public class SubcontractorProgressEntity {
         this.subcontractorProgressId = subcontractorProgressId;
     }
 
-    public TransactionsEntity getTransaction() {
-        return transaction;
+    public TransactionProgressEntity getTransactionProgress() {
+        return transactionProgress;
     }
 
-    public void setTransaction(TransactionsEntity transaction) {
-        this.transaction = transaction;
+    public void setTransactionProgress(TransactionProgressEntity transactionProgress) {
+        this.transactionProgress = transactionProgress;
     }
 
     public SubcontractorEntity getSubcontractor() {
@@ -115,6 +119,14 @@ public class SubcontractorProgressEntity {
 
     public void setProgressNotes(String progressNotes) {
         this.progressNotes = progressNotes;
+    }
+
+    public String getProgressImageUrl() {
+        return progressImageUrl;
+    }
+
+    public void setProgressImageUrl(String progressImageUrl) {
+        this.progressImageUrl = progressImageUrl;
     }
 
     public LocalDateTime getCreatedAt() {
