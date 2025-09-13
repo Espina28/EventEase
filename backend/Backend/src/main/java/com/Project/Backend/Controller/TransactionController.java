@@ -606,6 +606,42 @@ public ResponseEntity<?> getCurrentUserReservations(@RequestHeader("Authorizatio
     }
 
     /**
+     * Get subcontractor progress by subcontractorProgressId
+     */
+    @GetMapping("/subcontractor-progress/id/{subcontractorProgressId}")
+    public ResponseEntity<?> getSubcontractorProgressById(@PathVariable int subcontractorProgressId) {
+        try {
+            SubcontractorProgressEntity progress = subcontractorProgressRepository.findById(subcontractorProgressId).orElse(null);
+            if (progress == null) {
+                return ResponseEntity.notFound().build();
+            }
+        SubcontractorProgressDTO dto = new SubcontractorProgressDTO(
+            progress.getSubcontractorProgressId(),
+            progress.getTransactionProgress().getTransaction().getTransaction_Id(),
+            progress.getSubcontractor().getSubcontractor_Id(),
+            progress.getSubcontractor().getUser() != null ?
+                progress.getSubcontractor().getUser().getUserId() : 0,
+            progress.getSubcontractor().getSubcontractor_serviceName(),
+            progress.getSubcontractor().getSubcontractor_serviceCategory(),
+            progress.getSubcontractor().getUser() != null ?
+                progress.getSubcontractor().getUser().getProfilePicture() : null,
+            progress.getProgressPercentage(),
+            progress.getCheckInStatus().toString(),
+            progress.getProgressNotes(),
+            progress.getProgressImageUrl(),
+            progress.getCreatedAt(),
+            progress.getUpdatedAt()
+        );
+            return ResponseEntity.ok(dto);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+                "success", false,
+                "message", "Failed to fetch subcontractor progress: " + e.getMessage()
+            ));
+        }
+    }
+
+    /**
      * Get event progress with subcontractors
      */
     @GetMapping("/event-progress/{transactionId}")

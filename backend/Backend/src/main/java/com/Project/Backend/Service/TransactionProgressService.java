@@ -9,6 +9,7 @@ import com.Project.Backend.Repository.TransactionProgressRepository;
 import com.Project.Backend.Repository.SubcontractorProgressRepository;
 import com.Project.Backend.Repository.SubContractorRepository;
 import com.Project.Backend.Repository.EventServiceRepository;
+import com.Project.Backend.Repository.TransactionRepo;
 import com.Project.Backend.DTO.SubcontractorProgressDTO;
 import com.Project.Backend.DTO.EventProgressDTO;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -239,11 +240,11 @@ public class TransactionProgressService {
                 entity.getTransactionProgress().getTransaction().getTransaction_Id(),
                 entity.getSubcontractor().getSubcontractor_Id(),
                 entity.getSubcontractor().getUser() != null ?
-                    entity.getSubcontractor().getUser().getFirstname() + " " +
-                    entity.getSubcontractor().getUser().getLastname() :
-                    entity.getSubcontractor().getSubcontractor_serviceName(),
+                    entity.getSubcontractor().getUser().getUserId() : 0,
+                entity.getSubcontractor().getSubcontractor_serviceName(),
                 entity.getSubcontractor().getSubcontractor_serviceCategory(),
-                "/placeholder.svg", // Default avatar
+                entity.getSubcontractor().getUser() != null ?
+                    entity.getSubcontractor().getUser().getProfilePicture() : null,
                 entity.getProgressPercentage(),
                 entity.getCheckInStatus().toString(),
                 entity.getProgressNotes(),

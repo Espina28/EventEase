@@ -6,6 +6,7 @@ public class SubcontractorProgressDTO {
     private int subcontractorProgressId;
     private int transactionId;
     private int subcontractorId;
+    private int userId;
     private String subcontractorName;
     private String subcontractorRole;
     private String subcontractorAvatar;
@@ -53,6 +54,26 @@ public class SubcontractorProgressDTO {
         this.updatedAt = updatedAt;
     }
 
+    // Constructor for full subcontractor progress data with userId and image URL
+    public SubcontractorProgressDTO(int subcontractorProgressId, int transactionId, int subcontractorId, int userId,
+                                  String subcontractorName, String subcontractorRole, String subcontractorAvatar,
+                                  int progressPercentage, String checkInStatus, String progressNotes, String progressImageUrl,
+                                  LocalDateTime createdAt, LocalDateTime updatedAt) {
+        this.subcontractorProgressId = subcontractorProgressId;
+        this.transactionId = transactionId;
+        this.subcontractorId = subcontractorId;
+        this.userId = userId;
+        this.subcontractorName = subcontractorName;
+        this.subcontractorRole = subcontractorRole;
+        this.subcontractorAvatar = subcontractorAvatar;
+        this.progressPercentage = progressPercentage;
+        this.checkInStatus = checkInStatus;
+        this.progressNotes = progressNotes;
+        this.progressImageUrl = progressImageUrl;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
+    }
+
     // Constructor for basic subcontractor progress data
     public SubcontractorProgressDTO(int subcontractorId, String subcontractorName, String subcontractorRole,
                                   String subcontractorAvatar, int progressPercentage, String checkInStatus,
@@ -89,6 +110,14 @@ public class SubcontractorProgressDTO {
 
     public void setSubcontractorId(int subcontractorId) {
         this.subcontractorId = subcontractorId;
+    }
+
+    public int getUserId() {
+        return userId;
+    }
+
+    public void setUserId(int userId) {
+        this.userId = userId;
     }
 
     public String getSubcontractorName() {

@@ -39,6 +39,7 @@ const SubcontractorProgress = () => {
     image: null,
     description: "",
   })
+  const [existingImageUrl, setExistingImageUrl] = useState(null)
   const [userEmail, setUserEmail] = useState("")
 
   useEffect(() => {
