@@ -54,6 +54,8 @@ const EventTrackingAdmin = () => {
   const [showSubcontractorSelectionModal, setShowSubcontractorSelectionModal] = useState(false)
   const [actionDropdownOpen, setActionDropdownOpen] = useState(false)
   const [loadingMarkComplete, setLoadingMarkComplete] = useState(false)
+  const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [images, setImages] = useState([])
   const [updateData, setUpdateData] = useState({
     status: "",
     checkInStatus: "",
@@ -353,6 +355,32 @@ const EventTrackingAdmin = () => {
         lastUpdate: detailedProgress.updatedAt,
         avatar: detailedProgress.subcontractorAvatar,
       })
+
+      // Set images array for carousel
+      if (detailedProgress.progressImageUrl) {
+        try {
+          // First try to parse as JSON (for multiple images)
+          const parsedUrls = JSON.parse(detailedProgress.progressImageUrl);
+          const imageUrls = Array.isArray(parsedUrls) ? parsedUrls : [detailedProgress.progressImageUrl];
+
+          // Filter out empty/null URLs and ensure they are valid
+          const validImageUrls = imageUrls.filter(url => url && url.trim() !== '')
+
+          console.log("DEBUG: Setting images for carousel:", validImageUrls)
+          setImages(validImageUrls)
+          setCurrentImageIndex(0) // Reset to first image
+        } catch (error) {
+          // Fallback for single image URL (backward compatibility)
+          const imageUrls = [detailedProgress.progressImageUrl].filter(url => url && url.trim() !== '')
+          console.log("DEBUG: Setting single image for carousel:", imageUrls)
+          setImages(imageUrls)
+          setCurrentImageIndex(0)
+        }
+      } else {
+        console.log("DEBUG: No progress image URL found")
+        setImages([])
+        setCurrentImageIndex(0)
+      }
     } catch (error) {
       console.error("Failed to fetch detailed subcontractor progress:", error)
       // Fall back to existing data if individual endpoint fails
@@ -852,20 +880,39 @@ const EventTrackingAdmin = () => {
                 {selectedSubcontractor.progressImageUrl ? (
                   <Box className="mb-6">
                     <Typography variant="body2" color="text.secondary" className="mb-3">
-                      Progress Image
+                      Progress Images
                     </Typography>
-                    <Box className="flex justify-center">
+                    <Box className="flex justify-center items-center gap-4">
+                      <Button
+                        variant="outlined"
+                        onClick={() => setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1))}
+                        disabled={images.length <= 1}
+                      >
+                        ‹
+                      </Button>
                       <img
-                        src={selectedSubcontractor.progressImageUrl}
-                        alt="Subcontractor progress submission"
+                        src={images[currentImageIndex]}
+                        alt={`Subcontractor progress submission ${currentImageIndex + 1}`}
                         style={{
-                          maxWidth: '100%',
+                          maxWidth: '80%',
                           maxHeight: '400px',
                           objectFit: 'contain',
                           borderRadius: '12px',
                           boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                         }}
+                        onError={(e) => {
+                          console.error("Failed to load image:", images[currentImageIndex])
+                          e.target.src = "/placeholder.svg?key=image-error" // Fallback placeholder
+                          e.target.alt = "Image failed to load"
+                        }}
                       />
+                      <Button
+                        variant="outlined"
+                        onClick={() => setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1))}
+                        disabled={images.length <= 1}
+                      >
+                        ›
+                      </Button>
                     </Box>
                   </Box>
                 ) : (
@@ -1037,11 +1084,46 @@ const EventTrackingAdmin = () => {
                             <Typography variant="body2" color="text.secondary" className="mb-2">
                               Submission Image
                             </Typography>
-                            <img
-                              src={subcontractor.progressImageUrl}
-                              alt="Subcontractor submission"
-                              style={{ width: '100%', maxWidth: 300, height: 200, objectFit: 'cover', borderRadius: 8 }}
-                            />
+                            {(() => {
+                              const urlString = subcontractor.progressImageUrl;
+                              if (!urlString) return null;
+
+                              let imageUrls = [];
+
+                              // Check if it looks like a JSON array
+                              if (urlString.startsWith('[') && urlString.endsWith(']')) {
+                                try {
+                                  const parsed = JSON.parse(urlString);
+                                  if (Array.isArray(parsed)) {
+                                    imageUrls = parsed;
+                                  } else {
+                                    imageUrls = [urlString];
+                                  }
+                                } catch (error) {
+                                  // Manual parsing for malformed JSON
+                                  const content = urlString.slice(1, -1); // Remove brackets
+                                  const urls = content.split('","').map(url => url.replace(/^"|"$/g, '')); // Split by "," and remove quotes
+                                  imageUrls = urls.filter(url => url && url.trim());
+                                }
+                              } else {
+                                // Single URL
+                                imageUrls = [urlString];
+                              }
+
+                              return imageUrls.map((url, index) => (
+                                <img
+                                  key={index}
+                                  src={url}
+                                  alt={`Subcontractor submission ${index + 1}`}
+                                  style={{ width: '100%', maxWidth: 300, height: 200, objectFit: 'cover', borderRadius: 8, marginBottom: 8 }}
+                                  onError={(e) => {
+                                    console.error("Failed to load image:", url);
+                                    e.target.src = "/placeholder.svg?key=image-error";
+                                    e.target.alt = "Image failed to load";
+                                  }}
+                                />
+                              ));
+                            })()}
                           </Box>
                         )}
                         <Typography variant="body2" color="text.secondary" className="mb-1">

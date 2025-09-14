@@ -674,54 +674,56 @@ public ResponseEntity<?> getCurrentUserReservations(@RequestHeader("Authorizatio
     public ResponseEntity<?> uploadSubcontractorProgressImage(
             @PathVariable int transactionId,
             @PathVariable int subcontractorId,
-            @RequestParam("image") MultipartFile image,
+            @RequestParam("images") MultipartFile[] images,
             @RequestParam int progressPercentage,
             @RequestParam String checkInStatus,
             @RequestParam(required = false) String notes) {
         try {
-            // Validate image file
-            if (image == null || image.isEmpty()) {
+            if (images == null || images.length == 0) {
                 return ResponseEntity.badRequest().body(Map.of(
                     "success", false,
-                    "message", "Image file is required"
+                    "message", "At least one image file is required"
                 ));
             }
 
-            // Validate file type
-            String contentType = image.getContentType();
-            if (contentType == null || !contentType.startsWith("image/")) {
-                return ResponseEntity.badRequest().body(Map.of(
-                    "success", false,
-                    "message", "Only image files are allowed"
-                ));
+            List<String> imageUrls = new ArrayList<>();
+            for (MultipartFile image : images) {
+                if (image == null || image.isEmpty()) {
+                    continue;
+                }
+                String contentType = image.getContentType();
+                if (contentType == null || !contentType.startsWith("image/")) {
+                    return ResponseEntity.badRequest().body(Map.of(
+                        "success", false,
+                        "message", "Only image files are allowed"
+                    ));
+                }
+                java.io.File tempFile = java.io.File.createTempFile("progress_", "_" + image.getOriginalFilename());
+                image.transferTo(tempFile);
+                String folderPath = "subcontractor-progress/" + transactionId + "/" + subcontractorId + "/";
+                String imageUrl = s3Service.upload(tempFile, folderPath, image.getOriginalFilename());
+                tempFile.delete();
+                imageUrls.add(imageUrl);
             }
 
-            // Create temporary file for upload
-            java.io.File tempFile = java.io.File.createTempFile("progress_", "_" + image.getOriginalFilename());
-            image.transferTo(tempFile);
+            // Convert list of URLs to JSON string
+            ObjectMapper objectMapper = new ObjectMapper();
+            String imageUrlsJson = objectMapper.writeValueAsString(imageUrls);
 
-            // Upload to S3
-            String folderPath = "subcontractor-progress/" + transactionId + "/" + subcontractorId + "/";
-            String imageUrl = s3Service.upload(tempFile, folderPath, image.getOriginalFilename());
-
-            // Clean up temp file
-            tempFile.delete();
-
-            // Update subcontractor progress with image URL
             SubcontractorProgressEntity updatedProgress = transactionProgressService.updateSubcontractorProgress(
-                transactionId, subcontractorId, progressPercentage, checkInStatus, notes, imageUrl);
+                transactionId, subcontractorId, progressPercentage, checkInStatus, notes, imageUrlsJson);
 
             return ResponseEntity.ok(Map.of(
                 "success", true,
-                "message", "Progress image uploaded successfully",
-                "imageUrl", imageUrl,
+                "message", "Progress images uploaded successfully",
+                "imageUrls", imageUrls,
                 "progress", updatedProgress
             ));
 
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
                 "success", false,
-                "message", "Failed to upload image: " + e.getMessage()
+                "message", "Failed to upload images: " + e.getMessage()
             ));
         }
     }
@@ -786,29 +788,18 @@ public ResponseEntity<?> getCurrentUserReservations(@RequestHeader("Authorizatio
     public ResponseEntity<?> uploadSubcontractorProgressImageByEmail(
             @PathVariable int transactionId,
             @PathVariable String userEmail,
-            @RequestParam("image") MultipartFile image,
+            @RequestParam("images") MultipartFile[] images,
             @RequestParam int progressPercentage,
             @RequestParam String checkInStatus,
             @RequestParam(required = false) String notes) {
         try {
-            // Validate image file
-            if (image == null || image.isEmpty()) {
+            if (images == null || images.length == 0) {
                 return ResponseEntity.badRequest().body(Map.of(
                     "success", false,
-                    "message", "Image file is required"
+                    "message", "At least one image file is required"
                 ));
             }
 
-            // Validate file type
-            String contentType = image.getContentType();
-            if (contentType == null || !contentType.startsWith("image/")) {
-                return ResponseEntity.badRequest().body(Map.of(
-                    "success", false,
-                    "message", "Only image files are allowed"
-                ));
-            }
-
-            // Find subcontractor by email to get subcontractorId
             SubcontractorEntity subcontractor = subContractorRepository.findByEmail(userEmail);
             if (subcontractor == null) {
                 return ResponseEntity.badRequest().body(Map.of(
@@ -817,32 +808,43 @@ public ResponseEntity<?> getCurrentUserReservations(@RequestHeader("Authorizatio
                 ));
             }
 
-            // Create temporary file for upload
-            java.io.File tempFile = java.io.File.createTempFile("progress_", "_" + image.getOriginalFilename());
-            image.transferTo(tempFile);
+            List<String> imageUrls = new ArrayList<>();
+            for (MultipartFile image : images) {
+                if (image == null || image.isEmpty()) {
+                    continue;
+                }
+                String contentType = image.getContentType();
+                if (contentType == null || !contentType.startsWith("image/")) {
+                    return ResponseEntity.badRequest().body(Map.of(
+                        "success", false,
+                        "message", "Only image files are allowed"
+                    ));
+                }
+                java.io.File tempFile = java.io.File.createTempFile("progress_", "_" + image.getOriginalFilename());
+                image.transferTo(tempFile);
+                String folderPath = "subcontractor-progress/" + transactionId + "/" + subcontractor.getSubcontractor_Id() + "/";
+                String imageUrl = s3Service.upload(tempFile, folderPath, image.getOriginalFilename());
+                tempFile.delete();
+                imageUrls.add(imageUrl);
+            }
 
-            // Upload to S3
-            String folderPath = "subcontractor-progress/" + transactionId + "/" + subcontractor.getSubcontractor_Id() + "/";
-            String imageUrl = s3Service.upload(tempFile, folderPath, image.getOriginalFilename());
+            ObjectMapper objectMapper = new ObjectMapper();
+            String imageUrlsJson = objectMapper.writeValueAsString(imageUrls);
 
-            // Clean up temp file
-            tempFile.delete();
-
-            // Update subcontractor progress with image URL
             SubcontractorProgressEntity updatedProgress = transactionProgressService.updateSubcontractorProgress(
-                transactionId, subcontractor.getSubcontractor_Id(), progressPercentage, checkInStatus, notes, imageUrl);
+                transactionId, subcontractor.getSubcontractor_Id(), progressPercentage, checkInStatus, notes, imageUrlsJson);
 
             return ResponseEntity.ok(Map.of(
                 "success", true,
-                "message", "Progress image uploaded successfully",
-                "imageUrl", imageUrl,
+                "message", "Progress images uploaded successfully",
+                "imageUrls", imageUrls,
                 "progress", updatedProgress
             ));
 
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
                 "success", false,
-                "message", "Failed to upload image: " + e.getMessage()
+                "message", "Failed to upload images: " + e.getMessage()
             ));
         }
     }

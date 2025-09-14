@@ -193,7 +193,7 @@ public class TransactionProgressService {
      * Update subcontractor progress
      */
     public SubcontractorProgressEntity updateSubcontractorProgress(int transactionId, int subcontractorId,
-                                                                 int progressPercentage, String checkInStatus, String notes, String imageUrl) {
+                                                                 int progressPercentage, String checkInStatus, String notes, String imageUrlsJson) {
         Optional<SubcontractorProgressEntity> existingProgress =
             subcontractorProgressRepository.findByTransactionIdAndSubcontractorId(transactionId, subcontractorId);
 
@@ -217,8 +217,8 @@ public class TransactionProgressService {
             progress.setProgressNotes(notes);
         }
 
-        if (imageUrl != null && !imageUrl.trim().isEmpty()) {
-            progress.setProgressImageUrl(imageUrl);
+        if (imageUrlsJson != null && !imageUrlsJson.trim().isEmpty()) {
+            progress.setProgressImageUrl(imageUrlsJson);
         }
 
         SubcontractorProgressEntity savedProgress = subcontractorProgressRepository.save(progress);
@@ -374,7 +374,7 @@ public class TransactionProgressService {
      * Update subcontractor progress by email
      */
     public SubcontractorProgressEntity updateSubcontractorProgressByEmail(int transactionId, String userEmail,
-                                                                         int progressPercentage, String checkInStatus, String notes, String imageUrl) {
+                                                                         int progressPercentage, String checkInStatus, String notes, String imageUrlsJson) {
         // Find subcontractor by email
         SubcontractorEntity subcontractor = subContractorRepository.findByEmail(userEmail);
         if (subcontractor == null) {
@@ -382,7 +382,7 @@ public class TransactionProgressService {
         }
 
         // Use existing update method
-        return updateSubcontractorProgress(transactionId, subcontractor.getSubcontractor_Id(), progressPercentage, checkInStatus, notes, imageUrl);
+        return updateSubcontractorProgress(transactionId, subcontractor.getSubcontractor_Id(), progressPercentage, checkInStatus, notes, imageUrlsJson);
     }
 
     /**

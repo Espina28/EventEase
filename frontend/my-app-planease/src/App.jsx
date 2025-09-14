@@ -160,9 +160,9 @@ function App() {
                  </AdminProtectedRoute>
             }/>
               <Route path="/admin/eventprogress" element={
-                 // <AdminProtectedRoute>
-                < EventTrackingAdmin/>
-                // </AdminProtectedRoute>
+                <AdminProtectedRoute>
+                  < EventTrackingAdmin/>
+                </AdminProtectedRoute>
             }/>
           
           <Route path="/home" element={

@@ -36,9 +36,10 @@ const SubcontractorProgress = () => {
   const [selectedTransaction, setSelectedTransaction] = useState(null)
   const [showUpdateModal, setShowUpdateModal] = useState(false)
   const [updateData, setUpdateData] = useState({
-    image: null,
+    images: [],
     description: "",
   })
+  const [selectedFiles, setSelectedFiles] = useState([])
   const [existingImageUrl, setExistingImageUrl] = useState(null)
   const [userEmail, setUserEmail] = useState("")
 
@@ -90,10 +91,31 @@ const SubcontractorProgress = () => {
   const handleUpdateProgress = (transaction) => {
     setSelectedTransaction(transaction)
     setUpdateData({
-      image: null,
+      images: [],
       description: transaction.myProgress.notes || "",
     })
+    setSelectedFiles([])
     setShowUpdateModal(true)
+  }
+
+  const handleFileSelect = (event) => {
+    const files = Array.from(event.target.files)
+    const newFiles = files.filter(file =>
+      !selectedFiles.some(existingFile => existingFile.name === file.name && existingFile.size === file.size)
+    )
+    setSelectedFiles(prev => [...prev, ...newFiles])
+    setUpdateData(prev => ({
+      ...prev,
+      images: [...prev.images, ...newFiles]
+    }))
+  }
+
+  const removeFile = (index) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index))
+    setUpdateData(prev => ({
+      ...prev,
+      images: prev.images.filter((_, i) => i !== index)
+    }))
   }
 
   const handleSubmitUpdate = async () => {
@@ -101,10 +123,12 @@ const SubcontractorProgress = () => {
       try {
         const token = localStorage.getItem("token")
 
-        if (updateData.image) {
-          // Use the image upload endpoint
+        if (updateData.images && updateData.images.length > 0) {
+          // Use the image upload endpoint for multiple images
           const formData = new FormData()
-          formData.append("image", updateData.image)
+          updateData.images.forEach((image, index) => {
+            formData.append("images", image)
+          })
           formData.append("progressPercentage", "0") // Default value
           formData.append("checkInStatus", "SUBMITTED_FOR_REVIEW")
           formData.append("notes", updateData.description)
@@ -116,7 +140,7 @@ const SubcontractorProgress = () => {
               headers: {
                 Authorization: `Bearer ${token}`,
                 "Content-Type": "multipart/form-data",
-              },
+              }, 
             },
           )
         } else {
@@ -138,25 +162,13 @@ const SubcontractorProgress = () => {
           )
         }
 
-        // Update local state
-        setTransactions(
-          transactions.map((transaction) =>
-            transaction.id === selectedTransaction.id
-              ? {
-                  ...transaction,
-                  myProgress: {
-                    ...transaction.myProgress,
-                    notes: updateData.description,
-                    checkInStatus: "submitted for review",
-                  },
-                  lastUpdate: new Date().toLocaleString(),
-                }
-              : transaction,
-          ),
-        )
+        // Refresh data to get updated images
+        await fetchSubcontractorProgress(userEmail)
+
         setShowUpdateModal(false)
         setSelectedTransaction(null)
-        setUpdateData({ image: null, description: "" })
+        setUpdateData({ images: [], description: "" })
+        setSelectedFiles([])
       } catch (error) {
         console.error("Failed to submit check-in:", error)
         console.error("Error details:", error.response?.data)
@@ -415,23 +427,114 @@ const SubcontractorProgress = () => {
               <TextField
                 fullWidth
                 type="file"
-                label="Upload Image"
+                label="Upload Images"
                 InputLabelProps={{ shrink: true }}
-                inputProps={{ accept: "image/*" }}
-                onChange={(e) => setUpdateData({ ...updateData, image: e.target.files[0] })}
-                helperText="Upload an image of your work progress"
+                inputProps={{ accept: "image/*", multiple: true }}
+                onChange={handleFileSelect}
+                helperText="Upload one or more images of your work progress"
               />
+
+              {selectedFiles.length > 0 && (
+                <Box className="mt-4">
+                  <Typography variant="body2" color="text.secondary" className="mb-2">
+                    Selected Images ({selectedFiles.length}):
+                  </Typography>
+                  <Box className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                    {selectedFiles.map((file, index) => (
+                      <Box key={index} className="relative">
+                        <img
+                          src={URL.createObjectURL(file)}
+                          alt={`Selected ${index + 1}`}
+                          style={{
+                            width: '100%',
+                            height: '120px',
+                            objectFit: 'cover',
+                            borderRadius: '8px',
+                            border: '1px solid #e0e0e0'
+                          }}
+                        />
+                        <Button
+                          size="small"
+                          onClick={() => removeFile(index)}
+                          sx={{
+                            position: 'absolute',
+                            top: 4,
+                            right: 4,
+                            minWidth: '24px',
+                            width: '24px',
+                            height: '24px',
+                            borderRadius: '50%',
+                            backgroundColor: 'rgba(255, 0, 0, 0.8)',
+                            color: 'white',
+                            '&:hover': {
+                              backgroundColor: 'rgba(255, 0, 0, 1)',
+                            },
+                          }}
+                        >
+                          ×
+                        </Button>
+                        <Typography variant="caption" className="block mt-1 text-center">
+                          {file.name}
+                        </Typography>
+                      </Box>
+                    ))}
+                  </Box>
+                </Box>
+              )}
 
               {selectedTransaction?.myProgress.imageUrl && (
                 <Box className="mt-4">
                   <Typography variant="body2" color="text.secondary" className="mb-2">
-                    Current Image:
+                    Current Images:
                   </Typography>
-                  <img
-                    src={selectedTransaction.myProgress.imageUrl}
-                    alt="Current progress"
-                    style={{ maxWidth: '100%', maxHeight: '200px', borderRadius: '8px' }}
-                  />
+                  <Box className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                    {(() => {
+                      try {
+                        const imageUrls = JSON.parse(selectedTransaction.myProgress.imageUrl);
+                        return Array.isArray(imageUrls) ? imageUrls.map((url, index) => (
+                          <img
+                            key={index}
+                            src={url}
+                            alt={`Progress image ${index + 1}`}
+                            style={{
+                              width: '100%',
+                              height: '120px',
+                              objectFit: 'cover',
+                              borderRadius: '8px',
+                              border: '1px solid #e0e0e0'
+                            }}
+                          />
+                        )) : (
+                          <img
+                            src={selectedTransaction.myProgress.imageUrl}
+                            alt="Current progress"
+                            style={{
+                              width: '100%',
+                              height: '120px',
+                              objectFit: 'cover',
+                              borderRadius: '8px',
+                              border: '1px solid #e0e0e0'
+                            }}
+                          />
+                        );
+                      } catch (error) {
+                        // Fallback for single image URL (backward compatibility)
+                        return (
+                          <img
+                            src={selectedTransaction.myProgress.imageUrl}
+                            alt="Current progress"
+                            style={{
+                              width: '100%',
+                              height: '120px',
+                              objectFit: 'cover',
+                              borderRadius: '8px',
+                              border: '1px solid #e0e0e0'
+                            }}
+                          />
+                        );
+                      }
+                    })()}
+                  </Box>
                 </Box>
               )}
 
