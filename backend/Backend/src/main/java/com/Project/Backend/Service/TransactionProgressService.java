@@ -193,7 +193,7 @@ public class TransactionProgressService {
      * Update subcontractor progress
      */
     public SubcontractorProgressEntity updateSubcontractorProgress(int transactionId, int subcontractorId,
-                                                                 int progressPercentage, String checkInStatus, String notes, String imageUrlsJson) {
+                                                                 int progressPercentage, String checkInStatus, String notes, String imageUrlsJson, String comment) {
         Optional<SubcontractorProgressEntity> existingProgress =
             subcontractorProgressRepository.findByTransactionIdAndSubcontractorId(transactionId, subcontractorId);
 
@@ -219,6 +219,10 @@ public class TransactionProgressService {
 
         if (imageUrlsJson != null && !imageUrlsJson.trim().isEmpty()) {
             progress.setProgressImageUrl(imageUrlsJson);
+        }
+
+        if (comment != null && !comment.trim().isEmpty()) {
+            progress.setComment(comment);
         }
 
         SubcontractorProgressEntity savedProgress = subcontractorProgressRepository.save(progress);
@@ -257,6 +261,7 @@ public class TransactionProgressService {
                 entity.getCheckInStatus().toString(),
                 entity.getProgressNotes(),
                 entity.getProgressImageUrl(),
+                entity.getComment(),
                 entity.getCreatedAt(),
                 entity.getUpdatedAt()
             ))
@@ -347,6 +352,7 @@ public class TransactionProgressService {
                 entity.getCheckInStatus().toString(),
                 entity.getProgressNotes(),
                 entity.getProgressImageUrl(),
+                entity.getComment(),
                 entity.getCreatedAt(),
                 entity.getUpdatedAt()
             ))
@@ -374,7 +380,7 @@ public class TransactionProgressService {
      * Update subcontractor progress by email
      */
     public SubcontractorProgressEntity updateSubcontractorProgressByEmail(int transactionId, String userEmail,
-                                                                         int progressPercentage, String checkInStatus, String notes, String imageUrlsJson) {
+                                                                         int progressPercentage, String checkInStatus, String notes, String imageUrlsJson, String comment) {
         // Find subcontractor by email
         SubcontractorEntity subcontractor = subContractorRepository.findByEmail(userEmail);
         if (subcontractor == null) {
@@ -382,7 +388,7 @@ public class TransactionProgressService {
         }
 
         // Use existing update method
-        return updateSubcontractorProgress(transactionId, subcontractor.getSubcontractor_Id(), progressPercentage, checkInStatus, notes, imageUrlsJson);
+        return updateSubcontractorProgress(transactionId, subcontractor.getSubcontractor_Id(), progressPercentage, checkInStatus, notes, imageUrlsJson, comment);
     }
 
     /**

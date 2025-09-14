@@ -582,10 +582,11 @@ public ResponseEntity<?> getCurrentUserReservations(@RequestHeader("Authorizatio
             @RequestParam int progressPercentage,
             @RequestParam String checkInStatus,
             @RequestParam(required = false) String notes,
-            @RequestParam(required = false) String imageUrl) {
+            @RequestParam(required = false) String imageUrl,
+            @RequestParam(required = false) String comment) {
         try {
             SubcontractorProgressEntity updatedProgress = transactionProgressService.updateSubcontractorProgress(
-                transactionId, subcontractorId, progressPercentage, checkInStatus, notes, imageUrl);
+                transactionId, subcontractorId, progressPercentage, checkInStatus, notes, imageUrl, comment);
             return ResponseEntity.ok(updatedProgress);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
@@ -629,6 +630,7 @@ public ResponseEntity<?> getCurrentUserReservations(@RequestHeader("Authorizatio
             progress.getCheckInStatus().toString(),
             progress.getProgressNotes(),
             progress.getProgressImageUrl(),
+            progress.getComment(),
             progress.getCreatedAt(),
             progress.getUpdatedAt()
         );
@@ -677,7 +679,8 @@ public ResponseEntity<?> getCurrentUserReservations(@RequestHeader("Authorizatio
             @RequestParam("images") MultipartFile[] images,
             @RequestParam int progressPercentage,
             @RequestParam String checkInStatus,
-            @RequestParam(required = false) String notes) {
+            @RequestParam(required = false) String notes,
+            @RequestParam(required = false) String comment) {
         try {
             if (images == null || images.length == 0) {
                 return ResponseEntity.badRequest().body(Map.of(
@@ -711,7 +714,7 @@ public ResponseEntity<?> getCurrentUserReservations(@RequestHeader("Authorizatio
             String imageUrlsJson = objectMapper.writeValueAsString(imageUrls);
 
             SubcontractorProgressEntity updatedProgress = transactionProgressService.updateSubcontractorProgress(
-                transactionId, subcontractorId, progressPercentage, checkInStatus, notes, imageUrlsJson);
+                transactionId, subcontractorId, progressPercentage, checkInStatus, notes, imageUrlsJson, comment);
 
             return ResponseEntity.ok(Map.of(
                 "success", true,
@@ -771,10 +774,11 @@ public ResponseEntity<?> getCurrentUserReservations(@RequestHeader("Authorizatio
             @RequestParam int progressPercentage,
             @RequestParam String checkInStatus,
             @RequestParam(required = false) String notes,
-            @RequestParam(required = false) String imageUrl) {
+            @RequestParam(required = false) String imageUrl,
+            @RequestParam(required = false) String comment) {
         try {
             SubcontractorProgressEntity updatedProgress = transactionProgressService.updateSubcontractorProgressByEmail(
-                transactionId, userEmail, progressPercentage, checkInStatus, notes, imageUrl);
+                transactionId, userEmail, progressPercentage, checkInStatus, notes, imageUrl, comment);
             return ResponseEntity.ok(updatedProgress);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
@@ -791,7 +795,8 @@ public ResponseEntity<?> getCurrentUserReservations(@RequestHeader("Authorizatio
             @RequestParam("images") MultipartFile[] images,
             @RequestParam int progressPercentage,
             @RequestParam String checkInStatus,
-            @RequestParam(required = false) String notes) {
+            @RequestParam(required = false) String notes,
+            @RequestParam(required = false) String comment) {
         try {
             if (images == null || images.length == 0) {
                 return ResponseEntity.badRequest().body(Map.of(
@@ -832,7 +837,7 @@ public ResponseEntity<?> getCurrentUserReservations(@RequestHeader("Authorizatio
             String imageUrlsJson = objectMapper.writeValueAsString(imageUrls);
 
             SubcontractorProgressEntity updatedProgress = transactionProgressService.updateSubcontractorProgress(
-                transactionId, subcontractor.getSubcontractor_Id(), progressPercentage, checkInStatus, notes, imageUrlsJson);
+                transactionId, subcontractor.getSubcontractor_Id(), progressPercentage, checkInStatus, notes, imageUrlsJson, comment);
 
             return ResponseEntity.ok(Map.of(
                 "success", true,

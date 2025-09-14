@@ -75,6 +75,7 @@ const SubcontractorProgress = () => {
           progressPercentage: progress.progressPercentage || 0,
           checkInStatus: progress.checkInStatus ? progress.checkInStatus.toLowerCase() : "pending",
           notes: progress.progressNotes || "",
+          adminComment: progress.comment || "",
           serviceCategory: progress.subcontractorRole || "General Service",
           subcontractorProgressId: progress.subcontractorProgressId,
           imageUrl: progress.progressImageUrl || null,
@@ -129,9 +130,10 @@ const SubcontractorProgress = () => {
           updateData.images.forEach((image, index) => {
             formData.append("images", image)
           })
-          formData.append("progressPercentage", "0") // Default value
+          formData.append("progressPercentage", selectedTransaction.myProgress.progressPercentage.toString())
           formData.append("checkInStatus", "SUBMITTED_FOR_REVIEW")
           formData.append("notes", updateData.description)
+          formData.append("comment", updateData.description) // Add comment parameter for backend compatibility
 
           await axios.post(
             `http://localhost:8080/api/transactions/subcontractor-progress/${selectedTransaction.id}/email/${userEmail}/upload-image`,
@@ -150,7 +152,7 @@ const SubcontractorProgress = () => {
             null,
             {
               params: {
-                progressPercentage: 0,
+                progressPercentage: selectedTransaction.myProgress.progressPercentage,
                 checkInStatus: "SUBMITTED_FOR_REVIEW",
                 notes: updateData.description,
                 imageUrl: selectedTransaction.myProgress.imageUrl || null,
@@ -158,6 +160,7 @@ const SubcontractorProgress = () => {
               headers: {
                 Authorization: `Bearer ${token}`,
               },
+              withCredentials: true,
             },
           )
         }
@@ -374,20 +377,22 @@ const SubcontractorProgress = () => {
                         </Typography>
                       </TableCell>
                       <TableCell>
-                        <Button
-                          onClick={() => handleUpdateProgress(transaction)}
-                          size="small"
-                          startIcon={<EditIcon />}
-                          sx={{
-                            color: "#FFB22C",
-                            "&:hover": {
-                              backgroundColor: "rgba(255, 178, 44, 0.1)",
-                              color: "#e6a028",
-                            },
-                          }}
-                        >
-                          {transaction.myProgress.checkInStatus === "pending" ? "Check-in" : "Edit"}
-                        </Button>
+                        {transaction.myProgress.checkInStatus !== "approved" && (
+                          <Button
+                            onClick={() => handleUpdateProgress(transaction)}
+                            size="small"
+                            startIcon={<EditIcon />}
+                            sx={{
+                              color: "#FFB22C",
+                              "&:hover": {
+                                backgroundColor: "rgba(255, 178, 44, 0.1)",
+                                color: "#e6a028",
+                              },
+                            }}
+                          >
+                            {transaction.myProgress.checkInStatus === "pending" ? "Check-in" : "Edit"}
+                          </Button>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -538,16 +543,40 @@ const SubcontractorProgress = () => {
                 </Box>
               )}
 
+              <Box className="mb-3">
+                <Typography variant="body2" color="text.secondary" className="mb-1">
+                  Admin Comment
+                </Typography>
+                <TextField
+                  fullWidth
+                  multiline
+                  rows={2}
+                  value={selectedTransaction?.myProgress.adminComment || "No comment from admin yet"}
+                  InputProps={{ readOnly: true }}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      backgroundColor: '#f5f5f5',
+                    }
+                  }}
+                />
+              </Box>
+
+              <Box className="mb-3">
+                <Typography variant="body2" color="text.secondary" className="mb-1">
+                  Your Description {selectedTransaction?.myProgress.checkInStatus !== "approved" && <EditIcon sx={{ fontSize: 16, ml: 1, color: "#FFB22C" }} />}
+                </Typography>
               <TextField
                 fullWidth
                 multiline
-                rows={4}
+                rows={2}
                 label="Description"
                 value={updateData.description}
-                onChange={(e) => setUpdateData({ ...updateData, description: e.target.value })}
+                onChange={(e) => setUpdateData(prev => ({ ...prev, description: e.target.value }))}
+                InputProps={{ readOnly: selectedTransaction?.myProgress.checkInStatus === "approved" }}
                 placeholder="Describe your current progress and any updates..."
                 required
               />
+              </Box>
 
               <Box className="flex justify-end gap-4 pt-4">
                 <Button variant="outlined" onClick={() => setShowUpdateModal(false)}>

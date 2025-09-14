@@ -42,6 +42,7 @@ import {
   Group as GroupIcon,
   MoreVert as MoreVertIcon,
   CheckCircle as CheckCircleIcon,
+  Undo as UndoIcon,
 } from "@mui/icons-material"
 
 const EventTrackingAdmin = () => {
@@ -60,6 +61,7 @@ const EventTrackingAdmin = () => {
     status: "",
     checkInStatus: "",
     notes: "",
+    comment: "",
     progressPercentage: 0,
   })
 
@@ -327,6 +329,7 @@ const EventTrackingAdmin = () => {
       status: event.currentStatus,
       checkInStatus: subcontractor.checkInStatus,
       notes: subcontractor.notes,
+      comment: "",
       progressPercentage: subcontractor.progressPercentage,
     })
 
@@ -412,6 +415,7 @@ const EventTrackingAdmin = () => {
             progressPercentage: 100,
             checkInStatus: "approved",
             notes: "Approved by admin - Work completed successfully",
+            comment: updateData.comment,
           },
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -464,6 +468,93 @@ const EventTrackingAdmin = () => {
       }
     } catch (error) {
       console.error("Failed to mark subcontractor as complete:", error)
+      if (error.response) {
+        console.error("Error response:", error.response.data)
+        console.error("Error status:", error.response.status)
+      }
+    } finally {
+      setLoadingMarkComplete(false)
+    }
+  }
+
+  const handleMarkIncomplete = async (event, subcontractor) => {
+    console.log("DEBUG: handleMarkIncomplete called with:", { event: event.id, subcontractor: subcontractor.name, subcontractorEntityId: subcontractor.subcontractorEntityId, subcontractorEmail: subcontractor.subcontractorEmail })
+
+    setLoadingMarkComplete(true)
+
+    try {
+      const token = localStorage.getItem("token")
+
+      // Use email endpoint if subcontractorEntityId is undefined, otherwise use entity ID endpoint
+      const apiUrl = subcontractor.subcontractorEntityId
+        ? `http://localhost:8080/api/transactions/subcontractor-progress/${event.id}/${subcontractor.subcontractorEntityId}`
+        : `http://localhost:8080/api/transactions/subcontractor-progress/${event.id}/email/${subcontractor.subcontractorEmail}`
+
+      console.log("DEBUG: API URL:", apiUrl)
+
+      const newProgress = Math.min(selectedSubcontractor.progressPercentage + 20, 100)
+
+      const response = await axios.put(
+        apiUrl,
+        null,
+        {
+          params: {
+            progressPercentage: newProgress,
+            checkInStatus: "pending",
+            notes: "Marked as incomplete by admin - Work pending",
+            comment: updateData.comment,
+          },
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      )
+
+      console.log("DEBUG: API Response:", response)
+
+      if (response.status === 200) {
+        console.log("DEBUG: Updating state locally after subcontractor marked incomplete")
+        // Update the state locally to reflect the change immediately
+        setEvents((prevEvents) =>
+          prevEvents.map((e) =>
+            e.id === event.id
+              ? {
+                  ...e,
+                  subcontractors: e.subcontractors.map((sub) =>
+                    sub.id === subcontractor.id
+                      ? {
+                          ...sub,
+                          checkInStatus: "pending",
+                          progressPercentage: newProgress,
+                          lastUpdate: new Date().toLocaleString(),
+                        }
+                      : sub
+                  ),
+                  checkInStatus: getOverallCheckInStatus(
+                    e.subcontractors.map((sub) =>
+                      sub.id === subcontractor.id
+                        ? { ...sub, checkInStatus: "pending" }
+                        : sub
+                    )
+                  ),
+                  lastUpdate: new Date().toLocaleString(),
+                }
+              : e
+          )
+        )
+        console.log("DEBUG: State updated locally after marking incomplete")
+
+        // Refetch the events data to get the updated status from backend
+        await fetchEventsProgress()
+        console.log("DEBUG: Events data refetched successfully after marking incomplete")
+
+        // Close the modal after successful completion
+        setShowIndividualUpdateModal(false)
+        setSelectedEvent(null)
+        setSelectedSubcontractor(null)
+      } else {
+        console.error("Failed to mark subcontractor as incomplete: Unexpected response status", response.status)
+      }
+    } catch (error) {
+      console.error("Failed to mark subcontractor as incomplete:", error)
       if (error.response) {
         console.error("Error response:", error.response.data)
         console.error("Error status:", error.response.status)
@@ -966,6 +1057,25 @@ const EventTrackingAdmin = () => {
                     </Typography>
                   </Grid>
                 </Grid>
+
+                <Box className="mt-4">
+                  <Typography variant="body2" color="text.secondary" className="mb-2">
+                    Comment
+                  </Typography>
+                  <TextField
+                    fullWidth
+                    multiline
+                    rows={3}
+                    placeholder="Add a comment about this submission..."
+                    value={updateData.comment}
+                    onChange={(e) => setUpdateData({ ...updateData, comment: e.target.value })}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        backgroundColor: 'white',
+                      }
+                    }}
+                  />
+                </Box>
               </Box>
 
               {/* Review Actions */}
@@ -981,25 +1091,47 @@ const EventTrackingAdmin = () => {
                 </Button>
 
                 {selectedSubcontractor.checkInStatus === "submitted_for_review" && (
-                  <Button
-                    variant="contained"
-                    startIcon={<CheckCircleIcon />}
-                    onClick={() => handleMarkComplete(selectedEvent, selectedSubcontractor)}
-                    disabled={loadingMarkComplete}
-                    sx={{
-                      backgroundColor: "#4CAF50",
-                      color: "white",
-                      "&:hover": {
-                        backgroundColor: "#45a049",
-                      },
-                      "&:disabled": {
-                        backgroundColor: "#cccccc",
-                        color: "#666666",
-                      },
-                    }}
-                  >
-                    {loadingMarkComplete ? "Marking Complete..." : "Mark as Complete"}
-                  </Button>
+                  <>
+                    <Button
+                      variant="contained"
+                      startIcon={<CheckCircleIcon />}
+                      onClick={() => handleMarkComplete(selectedEvent, selectedSubcontractor)}
+                      disabled={loadingMarkComplete}
+                      sx={{
+                        backgroundColor: "#4CAF50",
+                        color: "white",
+                        "&:hover": {
+                          backgroundColor: "#45a049",
+                        },
+                        "&:disabled": {
+                          backgroundColor: "#cccccc",
+                          color: "#666666",
+                        },
+                      }}
+                    >
+                      {loadingMarkComplete ? "Marking Complete..." : "Mark as Complete"}
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      startIcon={<UndoIcon />}
+                      onClick={() => handleMarkIncomplete(selectedEvent, selectedSubcontractor)}
+                      disabled={loadingMarkComplete}
+                      sx={{
+                        borderColor: "#FFB22C",
+                        color: "#FFB22C",
+                        "&:hover": {
+                          backgroundColor: "rgba(255, 178, 44, 0.1)",
+                          borderColor: "#e6a028",
+                        },
+                        "&:disabled": {
+                          borderColor: "#cccccc",
+                          color: "#666666",
+                        },
+                      }}
+                    >
+                      Mark as Incomplete
+                    </Button>
+                  </>
                 )}
               </Box>
             </Box>

@@ -14,13 +14,14 @@ public class SubcontractorProgressDTO {
     private String checkInStatus;
     private String progressNotes;
     private String progressImageUrl;
+    private String comment;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
     // Constructor for full subcontractor progress data
     public SubcontractorProgressDTO(int subcontractorProgressId, int transactionId, int subcontractorId,
                                   String subcontractorName, String subcontractorRole, String subcontractorAvatar,
-                                  int progressPercentage, String checkInStatus, String progressNotes,
+                                  int progressPercentage, String checkInStatus, String progressNotes, String comment,
                                   LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.subcontractorProgressId = subcontractorProgressId;
         this.transactionId = transactionId;
@@ -31,6 +32,7 @@ public class SubcontractorProgressDTO {
         this.progressPercentage = progressPercentage;
         this.checkInStatus = checkInStatus;
         this.progressNotes = progressNotes;
+        this.comment = comment;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
@@ -38,7 +40,7 @@ public class SubcontractorProgressDTO {
     // Constructor for full subcontractor progress data with image URL
     public SubcontractorProgressDTO(int subcontractorProgressId, int transactionId, int subcontractorId,
                                   String subcontractorName, String subcontractorRole, String subcontractorAvatar,
-                                  int progressPercentage, String checkInStatus, String progressNotes, String progressImageUrl,
+                                  int progressPercentage, String checkInStatus, String progressNotes, String progressImageUrl, String comment,
                                   LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.subcontractorProgressId = subcontractorProgressId;
         this.transactionId = transactionId;
@@ -50,6 +52,7 @@ public class SubcontractorProgressDTO {
         this.checkInStatus = checkInStatus;
         this.progressNotes = progressNotes;
         this.progressImageUrl = progressImageUrl;
+        this.comment = comment;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
@@ -57,7 +60,7 @@ public class SubcontractorProgressDTO {
     // Constructor for full subcontractor progress data with userId and image URL
     public SubcontractorProgressDTO(int subcontractorProgressId, int transactionId, int subcontractorId, int userId,
                                   String subcontractorName, String subcontractorRole, String subcontractorAvatar,
-                                  int progressPercentage, String checkInStatus, String progressNotes, String progressImageUrl,
+                                  int progressPercentage, String checkInStatus, String progressNotes, String progressImageUrl, String comment,
                                   LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.subcontractorProgressId = subcontractorProgressId;
         this.transactionId = transactionId;
@@ -70,6 +73,7 @@ public class SubcontractorProgressDTO {
         this.checkInStatus = checkInStatus;
         this.progressNotes = progressNotes;
         this.progressImageUrl = progressImageUrl;
+        this.comment = comment;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
@@ -77,7 +81,7 @@ public class SubcontractorProgressDTO {
     // Constructor for basic subcontractor progress data
     public SubcontractorProgressDTO(int subcontractorId, String subcontractorName, String subcontractorRole,
                                   String subcontractorAvatar, int progressPercentage, String checkInStatus,
-                                  String progressNotes) {
+                                  String progressNotes, String comment) {
         this.subcontractorId = subcontractorId;
         this.subcontractorName = subcontractorName;
         this.subcontractorRole = subcontractorRole;
@@ -85,11 +89,20 @@ public class SubcontractorProgressDTO {
         this.progressPercentage = progressPercentage;
         this.checkInStatus = checkInStatus;
         this.progressNotes = progressNotes;
+        this.comment = comment;
     }
 
     // Getters and Setters
     public int getSubcontractorProgressId() {
         return subcontractorProgressId;
+    }
+
+    public String getComment() {
+        return comment;
+    }
+
+    public void setComment(String comment) {
+        this.comment = comment;
     }
 
     public void setSubcontractorProgressId(int subcontractorProgressId) {

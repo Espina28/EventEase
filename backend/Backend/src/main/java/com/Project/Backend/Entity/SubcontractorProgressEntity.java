@@ -34,6 +34,9 @@ public class SubcontractorProgressEntity {
     @Column(columnDefinition = "TEXT")
     private String progressImageUrl;
 
+    @Column(columnDefinition = "TEXT")
+    private String comment;
+
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
@@ -127,6 +130,14 @@ public class SubcontractorProgressEntity {
 
     public void setProgressImageUrl(String progressImageUrl) {
         this.progressImageUrl = progressImageUrl;
+    }
+
+    public String getComment() {
+        return comment;
+    }
+
+    public void setComment(String comment) {
+        this.comment = comment;
     }
 
     public LocalDateTime getCreatedAt() {
