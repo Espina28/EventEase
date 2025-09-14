@@ -7,6 +7,7 @@ import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.S3Configuration;
 import software.amazon.awssdk.services.s3.S3Utilities;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
@@ -40,7 +41,8 @@ public class S3Service {
                     .region(Region.of(region))
                     .credentialsProvider(StaticCredentialsProvider.create(
                             AwsBasicCredentials.create(accessKey, secretKey)
-                    ))
+                    )).serviceConfiguration(S3Configuration.builder()
+                            .pathStyleAccessEnabled(true).build())
                     .build();
         }
         this.presigner = S3Presigner.builder()
