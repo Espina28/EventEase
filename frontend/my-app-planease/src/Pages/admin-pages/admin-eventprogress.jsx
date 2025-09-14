@@ -53,6 +53,7 @@ const EventTrackingAdmin = () => {
   const [showIndividualUpdateModal, setShowIndividualUpdateModal] = useState(false)
   const [showSubcontractorSelectionModal, setShowSubcontractorSelectionModal] = useState(false)
   const [actionDropdownOpen, setActionDropdownOpen] = useState(false)
+  const [loadingMarkComplete, setLoadingMarkComplete] = useState(false)
   const [updateData, setUpdateData] = useState({
     status: "",
     checkInStatus: "",
@@ -76,6 +77,17 @@ const EventTrackingAdmin = () => {
       const eventsData = await Promise.all(
         response.data.map(async (transaction) => {
           try {
+            // Fetch event progress including status from backend
+            const eventProgressResponse = await axios.get(
+              `http://localhost:8080/api/transactions/event-progress/${transaction.transaction_Id}`,
+              {
+                headers: { Authorization: `Bearer ${token}` },
+              }
+            )
+            const eventProgressData = eventProgressResponse.data
+            console.log(`DEBUG: Event progress data for transaction ${transaction.transaction_Id}:`, eventProgressData)
+
+            // Fetch subcontractor progress data for each transaction
             const subcontractorProgressResponse = await axios.get(
               `http://localhost:8080/api/transactions/subcontractor-progress/${transaction.transaction_Id}`,
               {
@@ -94,6 +106,7 @@ const EventTrackingAdmin = () => {
 
                 return {
                   id: sub.subcontractorUserId.toString(),
+                  subcontractorEntityId: sub.subcontractorEntityId || sub.subcontractorUserId, // Add subcontractorEntityId for API calls
                   progressId: progressData?.subcontractorProgressId, // Store the subcontractor progress ID for individual endpoint
                   name: progressData?.subcontractorName || sub.subcontractorName,
                   role: progressData?.subcontractorServiceCategory || sub.serviceCategory,
@@ -110,22 +123,23 @@ const EventTrackingAdmin = () => {
               id: transaction.transaction_Id.toString(),
               eventName: transaction.eventName || transaction.packages || "N/A",
               subcontractors: subcontractors,
-              currentStatus: transaction.transactionStatus.toLowerCase(),
+              currentStatus: eventProgressData.currentStatus,
               location: transaction.transactionVenue || "N/A",
               startDate: transaction.transactionDate || "",
               lastUpdate: transaction.lastUpdate || "",
-              checkInStatus: getOverallCheckInStatus(subcontractors),
+              checkInStatus: eventProgressData.checkInStatus,
               notes: transaction.transactionNote || "",
-              progressPercentage: calculateOverallProgress(subcontractors),
+              progressPercentage: eventProgressData.progressPercentage,
             }
           } catch (error) {
-            console.error(`Failed to fetch subcontractor progress for transaction ${transaction.transaction_Id}:`, error)
-            // Fallback to original data if subcontractor progress fetch fails
+            console.error(`Failed to fetch progress for transaction ${transaction.transaction_Id}:`, error)
+            // Fallback to original data if progress fetch fails
             return {
               id: transaction.transaction_Id.toString(),
               eventName: transaction.eventName || transaction.packages || "N/A",
               subcontractors: transaction.subcontractors.map((sub) => ({
                 id: sub.subcontractorUserId.toString(),
+                subcontractorEntityId: sub.subcontractorEntityId || sub.subcontractorUserId, // Add subcontractorEntityId for API calls
                 name: sub.subcontractorName,
                 role: sub.serviceCategory,
                 progressPercentage: sub.progressPercentage || 0,
@@ -161,13 +175,9 @@ const EventTrackingAdmin = () => {
 
   const getOverallCheckInStatus = (subcontractors) => {
     if (subcontractors.length === 1) return subcontractors[0].checkInStatus
-    const hasRejected = subcontractors.some((sub) => sub.checkInStatus === "rejected")
-    const hasPending = subcontractors.some((sub) => sub.checkInStatus === "pending")
     const allApproved = subcontractors.every((sub) => sub.checkInStatus === "approved")
 
-    if (hasRejected) return "rejected"
-    if (hasPending) return "pending"
-    if (allApproved) return "approved"
+    if (allApproved) return "completed"
     return "pending"
   }
 
@@ -202,20 +212,8 @@ const EventTrackingAdmin = () => {
             headers: { Authorization: `Bearer ${token}` },
           }
         )
-        setEvents(
-          events.map((event) =>
-            event.id === selectedEvent.id
-              ? {
-                  ...event,
-                  currentStatus: updateData.status,
-                  checkInStatus: updateData.checkInStatus,
-                  notes: updateData.notes,
-                  progressPercentage: updateData.progressPercentage,
-                  lastUpdate: new Date().toLocaleString(),
-                }
-              : event,
-          ),
-        )
+        // Refetch the events data to get the updated status from backend
+        await fetchEventsProgress()
         setShowModal(false)
         setSelectedEvent(null)
       } catch (error) {
@@ -247,6 +245,8 @@ const EventTrackingAdmin = () => {
         return "success"
       case "rejected":
         return "error"
+      case "completed":
+        return "success"
       default:
         return "default"
     }
@@ -256,9 +256,9 @@ const EventTrackingAdmin = () => {
     if (subcontractors.length === 1) {
       return (
         <Box className="flex items-center gap-2">
-          <Avatar src={subcontractors[0].avatar} alt={subcontractors[0].name} sx={{ width: 32, height: 32 }} />
+          <Avatar src={subcontractors[0].avatar} alt={subcontractors[0].role} sx={{ width: 32, height: 32 }} />
           <Typography variant="body2" className="text-[#667085]">
-            {subcontractors[0].name}
+            {subcontractors[0].role}
           </Typography>
         </Box>
       )
@@ -271,8 +271,8 @@ const EventTrackingAdmin = () => {
             <Box>
               {subcontractors.map((sub) => (
                 <Box key={sub.id} className="flex items-center gap-2 py-1">
-                  <Avatar src={sub.avatar} alt={sub.name} sx={{ width: 24, height: 24 }} />
-                  <Typography variant="body2">{sub.name}</Typography>
+                  <Avatar src={sub.avatar} alt={sub.role} sx={{ width: 24, height: 24 }} />
+                  <Typography variant="body2">{sub.role}</Typography>
                 </Box>
               ))}
             </Box>
@@ -282,7 +282,7 @@ const EventTrackingAdmin = () => {
           <Box className="flex items-center">
             <AvatarGroup max={3} sx={{ "& .MuiAvatar-root": { width: 32, height: 32 } }}>
               {subcontractors.map((sub) => (
-                <Avatar key={sub.id} src={sub.avatar} alt={sub.name} />
+                <Avatar key={sub.id} src={sub.avatar} alt={sub.role} />
               ))}
             </AvatarGroup>
           </Box>
@@ -296,8 +296,8 @@ const EventTrackingAdmin = () => {
           <Box>
             {subcontractors.map((sub) => (
               <Box key={sub.id} className="flex items-center gap-2 py-1">
-                <Avatar src={sub.avatar} alt={sub.name} sx={{ width: 24, height: 24 }} />
-                <Typography variant="body2">{sub.name}</Typography>
+                <Avatar src={sub.avatar} alt={sub.role} sx={{ width: 24, height: 24 }} />
+                <Typography variant="body2">{sub.role}</Typography>
               </Box>
             ))}
           </Box>
@@ -307,7 +307,7 @@ const EventTrackingAdmin = () => {
         <Box className="flex items-center">
           <AvatarGroup max={2} sx={{ "& .MuiAvatar-root": { width: 32, height: 32 } }}>
             {subcontractors.slice(0, 2).map((sub) => (
-              <Avatar key={sub.id} src={sub.avatar} alt={sub.name} />
+              <Avatar key={sub.id} src={sub.avatar} alt={sub.role} />
             ))}
             <Avatar sx={{ bgcolor: "#FFB22C", width: 32, height: 32, fontSize: "0.75rem" }}>
               +{subcontractors.length - 2}
@@ -362,42 +362,86 @@ const EventTrackingAdmin = () => {
   }
 
   const handleMarkComplete = async (event, subcontractor) => {
+    console.log("DEBUG: handleMarkComplete called with:", { event: event.id, subcontractor: subcontractor.name, subcontractorEntityId: subcontractor.subcontractorEntityId, subcontractorEmail: subcontractor.subcontractorEmail })
+
+    setLoadingMarkComplete(true)
+
     try {
       const token = localStorage.getItem("token")
-      await axios.put(
-        `http://localhost:8080/api/transactions/subcontractor-progress/${event.id}/${subcontractor.id}`,
+
+      // Use email endpoint if subcontractorEntityId is undefined, otherwise use entity ID endpoint
+      const apiUrl = subcontractor.subcontractorEntityId
+        ? `http://localhost:8080/api/transactions/subcontractor-progress/${event.id}/${subcontractor.subcontractorEntityId}`
+        : `http://localhost:8080/api/transactions/subcontractor-progress/${event.id}/email/${subcontractor.subcontractorEmail}`
+
+      console.log("DEBUG: API URL:", apiUrl)
+
+      const response = await axios.put(
+        apiUrl,
         null,
         {
           params: {
             progressPercentage: 100,
             checkInStatus: "approved",
-            notes: subcontractor.notes,
+            notes: "Approved by admin - Work completed successfully",
           },
           headers: { Authorization: `Bearer ${token}` },
         }
       )
-      setEvents(
-        events.map((e) =>
-          e.id === event.id
-            ? {
-                ...e,
-                subcontractors: e.subcontractors.map((sub) =>
-                  sub.id === subcontractor.id
-                    ? {
-                        ...sub,
-                        checkInStatus: "approved",
-                        progressPercentage: 100,
-                        lastUpdate: new Date().toLocaleString(),
-                      }
-                    : sub,
-                ),
-                lastUpdate: new Date().toLocaleString(),
-              }
-            : e,
-        ),
-      )
+
+      console.log("DEBUG: API Response:", response)
+
+      if (response.status === 200) {
+        console.log("DEBUG: Updating state locally after subcontractor update")
+        // Update the state locally to reflect the change immediately
+        setEvents((prevEvents) =>
+          prevEvents.map((e) =>
+            e.id === event.id
+              ? {
+                  ...e,
+                  subcontractors: e.subcontractors.map((sub) =>
+                    sub.id === subcontractor.id
+                      ? {
+                          ...sub,
+                          checkInStatus: "approved",
+                          progressPercentage: 100,
+                          lastUpdate: new Date().toLocaleString(),
+                        }
+                      : sub
+                  ),
+                  checkInStatus: getOverallCheckInStatus(
+                    e.subcontractors.map((sub) =>
+                      sub.id === subcontractor.id
+                        ? { ...sub, checkInStatus: "approved" }
+                        : sub
+                    )
+                  ),
+                  lastUpdate: new Date().toLocaleString(),
+                }
+              : e
+          )
+        )
+        console.log("DEBUG: State updated locally")
+
+        // Refetch the events data to get the updated status from backend
+        await fetchEventsProgress()
+        console.log("DEBUG: Events data refetched successfully")
+
+        // Close the modal after successful completion
+        setShowIndividualUpdateModal(false)
+        setSelectedEvent(null)
+        setSelectedSubcontractor(null)
+      } else {
+        console.error("Failed to mark subcontractor as complete: Unexpected response status", response.status)
+      }
     } catch (error) {
       console.error("Failed to mark subcontractor as complete:", error)
+      if (error.response) {
+        console.error("Error response:", error.response.data)
+        console.error("Error status:", error.response.status)
+      }
+    } finally {
+      setLoadingMarkComplete(false)
     }
   }
 
@@ -405,8 +449,14 @@ const EventTrackingAdmin = () => {
     if (selectedEvent && selectedSubcontractor) {
       try {
         const token = localStorage.getItem("token")
+
+        // Use email endpoint if subcontractorEntityId is undefined, otherwise use entity ID endpoint
+        const apiUrl = selectedSubcontractor.subcontractorEntityId
+          ? `http://localhost:8080/api/transactions/subcontractor-progress/${selectedEvent.id}/${selectedSubcontractor.subcontractorEntityId}`
+          : `http://localhost:8080/api/transactions/subcontractor-progress/${selectedEvent.id}/email/${selectedSubcontractor.subcontractorEmail}`
+
         await axios.put(
-          `http://localhost:8080/api/transactions/subcontractor-progress/${selectedEvent.id}/${selectedSubcontractor.id}`,
+          apiUrl,
           null,
           {
             params: {
@@ -417,27 +467,8 @@ const EventTrackingAdmin = () => {
             headers: { Authorization: `Bearer ${token}` },
           }
         )
-        setEvents(
-          events.map((event) =>
-            event.id === selectedEvent.id
-              ? {
-                  ...event,
-                  subcontractors: event.subcontractors.map((sub) =>
-                    sub.id === selectedSubcontractor.id
-                      ? {
-                          ...sub,
-                          checkInStatus: updateData.checkInStatus,
-                          notes: updateData.notes,
-                          progressPercentage: updateData.progressPercentage,
-                          lastUpdate: new Date().toLocaleString(),
-                        }
-                      : sub,
-                  ),
-                  lastUpdate: new Date().toLocaleString(),
-                }
-              : event,
-          ),
-        )
+        // Refetch the events data to get the updated status from backend
+        await fetchEventsProgress()
         setShowIndividualUpdateModal(false)
         setSelectedEvent(null)
         setSelectedSubcontractor(null)
@@ -605,8 +636,8 @@ const EventTrackingAdmin = () => {
                     </TableCell>
                     <TableCell>
                       <Chip
-                        label={getOverallCheckInStatus(event.subcontractors)}
-                        color={getCheckInColor(getOverallCheckInStatus(event.subcontractors))}
+                        label={event.checkInStatus}
+                        color={getCheckInColor(event.checkInStatus)}
                         size="small"
                       />
                     </TableCell>
@@ -645,7 +676,7 @@ const EventTrackingAdmin = () => {
           {selectedEvent && selectedEvent.subcontractors.map((sub) => (
             <Box key={sub.id} className="flex items-center justify-between p-3 border-b cursor-pointer hover:bg-gray-50" onClick={() => { handleUpdateSubcontractor(selectedEvent, sub); setShowSubcontractorSelectionModal(false); }}>
               <Box className="flex items-center gap-3">
-                <Avatar src={sub.avatar} alt={sub.name} sx={{ width: 32, height: 32 }} />
+                <Avatar src={sub.avatar} alt={sub.role} sx={{ width: 32, height: 32 }} />
                 <Box>
                   <Typography variant="body1" className="font-medium">{sub.name}</Typography>
                   <Typography variant="body2" color="text.secondary">{sub.role}</Typography>
@@ -902,20 +933,25 @@ const EventTrackingAdmin = () => {
                   Close Review
                 </Button>
 
-                {selectedSubcontractor.checkInStatus !== "approved" && (
+                {selectedSubcontractor.checkInStatus === "submitted_for_review" && (
                   <Button
                     variant="contained"
                     startIcon={<CheckCircleIcon />}
                     onClick={() => handleMarkComplete(selectedEvent, selectedSubcontractor)}
+                    disabled={loadingMarkComplete}
                     sx={{
                       backgroundColor: "#4CAF50",
                       color: "white",
                       "&:hover": {
                         backgroundColor: "#45a049",
                       },
+                      "&:disabled": {
+                        backgroundColor: "#cccccc",
+                        color: "#666666",
+                      },
                     }}
                   >
-                    Mark as Complete
+                    {loadingMarkComplete ? "Marking Complete..." : "Mark as Complete"}
                   </Button>
                 )}
               </Box>
@@ -1032,19 +1068,26 @@ const EventTrackingAdmin = () => {
                           >
                             Update This Subcontractor
                           </Button>
-                          <Button
-                            variant="contained"
-                            color="success"
-                            onClick={() => handleMarkComplete(selectedEvent, subcontractor)}
-                            sx={{
-                              backgroundColor: "#4caf50",
-                              "&:hover": {
-                                backgroundColor: "#388e3c",
-                              },
-                            }}
-                          >
-                            Mark as Complete
-                          </Button>
+                          {subcontractor.checkInStatus === "submitted_for_review" && (
+                            <Button
+                              variant="contained"
+                              color="success"
+                              onClick={() => handleMarkComplete(selectedEvent, subcontractor)}
+                              disabled={loadingMarkComplete}
+                              sx={{
+                                backgroundColor: "#4caf50",
+                                "&:hover": {
+                                  backgroundColor: "#388e3c",
+                                },
+                                "&:disabled": {
+                                  backgroundColor: "#cccccc",
+                                  color: "#666666",
+                                },
+                              }}
+                            >
+                              {loadingMarkComplete ? "Marking Complete..." : "Mark as Complete"}
+                            </Button>
+                          )}
                         </Box>
                       </Grid>
                     </Grid>

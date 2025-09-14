@@ -36,6 +36,9 @@ public class TransactionProgressService {
     @Autowired
     private EventServiceRepository eventServiceRepository;
 
+    @Autowired
+    private TransactionRepo transactionRepo;
+
     /**
      * Create initial progress record when transaction is created
      */
@@ -218,7 +221,12 @@ public class TransactionProgressService {
             progress.setProgressImageUrl(imageUrl);
         }
 
-        return subcontractorProgressRepository.save(progress);
+        SubcontractorProgressEntity savedProgress = subcontractorProgressRepository.save(progress);
+
+        // Check if all subcontractors are approved and update transaction status if needed
+        checkAndUpdateTransactionStatus(transactionId);
+
+        return savedProgress;
     }
 
     /**
@@ -260,8 +268,11 @@ public class TransactionProgressService {
      */
     public EventProgressDTO getEventProgress(int transactionId) {
         // Get transaction details
-        Optional<TransactionsEntity> transactionOpt = Optional.ofNullable(null); // This would need to be injected
-        // For now, we'll create a mock transaction - in real implementation, you'd inject TransactionService
+        Optional<TransactionsEntity> transactionOpt = transactionRepo.findById(transactionId);
+        if (transactionOpt.isEmpty()) {
+            throw new RuntimeException("Transaction not found for ID: " + transactionId);
+        }
+        TransactionsEntity transaction = transactionOpt.get();
 
         // Get subcontractor progress
         List<SubcontractorProgressDTO> subcontractorProgress = getSubcontractorProgressDTOs(transactionId);
@@ -276,27 +287,28 @@ public class TransactionProgressService {
         String overallCheckInStatus = "pending";
         if (!subcontractorProgress.isEmpty()) {
             boolean hasRejected = subcontractorProgress.stream()
-                .anyMatch(sp -> "rejected".equalsIgnoreCase(sp.getCheckInStatus()));
-            boolean hasPending = subcontractorProgress.stream()
-                .anyMatch(sp -> "pending".equalsIgnoreCase(sp.getCheckInStatus()));
+                .anyMatch(sp -> "REJECTED".equals(sp.getCheckInStatus()));
             boolean allApproved = subcontractorProgress.stream()
-                .allMatch(sp -> "approved".equalsIgnoreCase(sp.getCheckInStatus()));
+                .allMatch(sp -> "APPROVED".equals(sp.getCheckInStatus()));
 
             if (hasRejected) {
                 overallCheckInStatus = "rejected";
-            } else if (hasPending) {
-                overallCheckInStatus = "pending";
             } else if (allApproved) {
-                overallCheckInStatus = "approved";
+                overallCheckInStatus = "completed";
+            } else {
+                overallCheckInStatus = "pending";
             }
         }
 
+        // Map transaction status to frontend status
+        String currentStatus = mapTransactionStatusToFrontend(transaction.getTransactionStatus());
+
         return new EventProgressDTO(
             transactionId,
-            "Event " + transactionId, // This would come from transaction
-            "Location TBD", // This would come from transaction
-            "2024-01-15", // This would come from transaction
-            "in-progress", // This would be calculated
+            transaction.getEvent() != null ? transaction.getEvent().getEvent_name() : "Event " + transactionId,
+            transaction.getTransactionVenue() != null ? transaction.getTransactionVenue() : "Location TBD",
+            transaction.getTransactionDate() != null ? transaction.getTransactionDate().toString() : "2024-01-15",
+            currentStatus,
             overallCheckInStatus,
             "Event in progress",
             overallProgress,
@@ -371,5 +383,47 @@ public class TransactionProgressService {
 
         // Use existing update method
         return updateSubcontractorProgress(transactionId, subcontractor.getSubcontractor_Id(), progressPercentage, checkInStatus, notes, imageUrl);
+    }
+
+    /**
+     * Check if all subcontractors are approved and update transaction status to completed if so
+     */
+    private void checkAndUpdateTransactionStatus(int transactionId) {
+        List<SubcontractorProgressEntity> subcontractorProgresses = getSubcontractorProgressByTransactionId(transactionId);
+
+        // Check if all subcontractors are approved
+        boolean allApproved = !subcontractorProgresses.isEmpty() &&
+            subcontractorProgresses.stream()
+                .allMatch(sp -> sp.getCheckInStatus() == SubcontractorProgressEntity.CheckInStatus.APPROVED);
+
+        if (allApproved) {
+            // Update transaction status to COMPLETED
+            Optional<TransactionsEntity> transactionOpt = transactionRepo.findById(transactionId);
+            if (transactionOpt.isPresent()) {
+                TransactionsEntity transaction = transactionOpt.get();
+                transaction.setTransactionStatus(TransactionsEntity.Status.COMPLETED);
+                transactionRepo.save(transaction);
+            }
+        }
+    }
+
+    /**
+     * Map transaction status to frontend status string
+     */
+    private String mapTransactionStatusToFrontend(TransactionsEntity.Status status) {
+        switch (status) {
+            case COMPLETED:
+                return "completed";
+            case PENDING:
+                return "pending";
+            case ONGOING:
+                return "in-progress";
+            case DECLINED:
+                return "declined";
+            case CANCELLED:
+                return "cancelled";
+            default:
+                return "pending";
+        }
     }
 }

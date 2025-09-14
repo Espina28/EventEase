@@ -205,6 +205,7 @@ public class TransactionService {
 
                    Map<String, Object> subcontractorDetails = new HashMap<>();
                    subcontractorDetails.put("subcontractorUserId", subcontractor.getUser().getUserId());
+                   subcontractorDetails.put("subcontractorEntityId", subcontractor.getSubcontractor_Id()); // Add the correct subcontractor entity ID
                    subcontractorDetails.put("subcontractorName", subcontractor.getUser().getFirstname() + " " + subcontractor.getUser().getLastname());
                    subcontractorDetails.put("subcontractorEmail", subcontractor.getUser().getEmail());
                    subcontractorDetails.put("serviceName", subcontractor.getSubcontractor_serviceName());
@@ -221,6 +222,7 @@ public class TransactionService {
                 subcontractor -> {
                     Map<String, Object> subcontractorDetails = new HashMap<>();
                     subcontractorDetails.put("subcontractorUserId", subcontractor.getUser().getUserId());
+                    subcontractorDetails.put("subcontractorEntityId", subcontractor.getSubcontractor_Id()); // Add the correct subcontractor entity ID
                     subcontractorDetails.put("subcontractorName", subcontractor.getUser().getFirstname() + " " + subcontractor.getUser().getLastname());
                     subcontractorDetails.put("subcontractorEmail", subcontractor.getUser().getEmail());
                     subcontractorDetails.put("serviceName", subcontractor.getSubcontractor_serviceName());
